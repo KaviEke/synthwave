@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../config';
 
 export const SocketContext = createContext();
 
@@ -9,7 +10,6 @@ export const SocketProvider = ({ children }) => {
   const [currentNote, setCurrentNote] = useState(null); // { instrument: 'violin', note: 'A4' }
 
   useEffect(() => {
-    const SOCKET_URL = 'http://localhost:5000';
     // Force websocket-only connection to eliminate 500ms polling handshake delay
     const newSocket = io(SOCKET_URL, {
       transports: ['websocket'],

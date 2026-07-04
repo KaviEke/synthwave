@@ -3,6 +3,7 @@ import { SocketContext } from '../context/SocketContext';
 import { AuthContext } from '../context/AuthContext';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import axios from 'axios';
+import { API_URL } from '../config';
 const InteractiveInstrument = ({ instrument }) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -111,7 +112,6 @@ function LiveSession() {
       const durationMinutes = Math.max(1, Math.round((endTime - startTime) / 60000));
       
       try {
-        const API_URL = 'http://localhost:5000/api';
         await axios.post(`${API_URL}/session`, {
           durationMinutes,
           notesPlayed,
