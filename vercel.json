@@ -18,6 +18,14 @@
             }
         },
         {
+            "source": "/((?!api/|assets/|images/|icons.svg|favicon.svg)[^.]*)",
+            "destination": {
+                "type": "service",
+                "service": "frontend",
+                "path": "/index.html"
+            }
+        },
+        {
             "source": "/(.*)",
             "destination": {
                 "type": "service",
