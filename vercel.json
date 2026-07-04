@@ -6,7 +6,6 @@
         },
         "backend": {
             "root": "backend",
-            "runtime": "@vercel/node",
             "entrypoint": "server.js"
         }
     },
