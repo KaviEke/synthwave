@@ -11,26 +11,28 @@
     },
     "rewrites": [
         {
-            "source": "/api(/.*)?",
-            "destination": {
-                "type": "service",
-                "service": "backend"
-            }
+            "source": "/api/(.*)",
+            "destination": { "service": "backend" }
         },
         {
-            "source": "/((?!api/|assets/|images/|icons.svg|favicon.svg)[^.]*)",
-            "destination": {
-                "type": "service",
-                "service": "frontend",
-                "path": "/index.html"
-            }
+            "source": "/assets/(.*)",
+            "destination": { "service": "frontend" }
+        },
+        {
+            "source": "/images/(.*)",
+            "destination": { "service": "frontend" }
+        },
+        {
+            "source": "/favicon.svg",
+            "destination": { "service": "frontend" }
+        },
+        {
+            "source": "/icons.svg",
+            "destination": { "service": "frontend" }
         },
         {
             "source": "/(.*)",
-            "destination": {
-                "type": "service",
-                "service": "frontend"
-            }
+            "destination": { "service": "frontend", "path": "/index.html" }
         }
     ]
 }
