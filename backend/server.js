@@ -1,3 +1,5 @@
+const dns = require('node:dns');
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 const util = require('util');
 // Polyfill for older libraries (like NeDB) failing on Node.js v25
 if (!util.isDate) util.isDate = (d) => d instanceof Date;

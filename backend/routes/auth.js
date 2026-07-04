@@ -2,13 +2,12 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const Datastore = require('nedb');
-
-// Use NeDB for a local, installation-free database
-const usersDB = new Datastore({ filename: 'users.db', autoload: true });
+const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'music_motion_super_secret_key';
 
+// @route   POST api/auth/register
+// @desc    Register a new user
 router.post('/register', async (req, res) => {
   console.log('Received register request with body:', req.body);
   try {
@@ -27,56 +26,44 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters.' });
     }
 
-    // Check for duplicate username first
-    usersDB.findOne({ username }, (err, existingByUsername) => {
-      if (err) {
-        console.error('Find error:', err);
-        return res.status(500).send('Server Error');
-      }
-      if (existingByUsername) {
-        return res.status(400).json({ message: 'Username is already taken.' });
-      }
+    // Check for duplicate username
+    const existingByUsername = await User.findOne({ username });
+    if (existingByUsername) {
+      return res.status(400).json({ message: 'Username is already taken.' });
+    }
 
-      // Then check for duplicate email
-      usersDB.findOne({ email }, async (err, existingByEmail) => {
-        if (err) {
-          console.error('Find error:', err);
-          return res.status(500).send('Server Error');
-        }
-        if (existingByEmail) {
-          return res.status(400).json({ message: 'An account with this email already exists.' });
-        }
+    // Check for duplicate email
+    const existingByEmail = await User.findOne({ email });
+    if (existingByEmail) {
+      return res.status(400).json({ message: 'An account with this email already exists.' });
+    }
 
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+    // Securely hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-      const newUser = {
-        username,
-        email,
-        password: hashedPassword,
-        createdAt: new Date()
-      };
-
-        usersDB.insert(newUser, (err, user) => {
-          if (err) {
-            console.error('Insert error:', err);
-            return res.status(500).send('Server Error');
-          }
-          
-          console.log('User inserted successfully:', user._id);
-          const payload = { userId: user._id };
-          const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-
-          res.status(201).json({ token, user: { id: user._id, username, email } });
-        });
-      });
+    // Save to MongoDB
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword
     });
+
+    const user = await newUser.save();
+    
+    console.log('User registered successfully:', user._id);
+    const payload = { userId: user._id };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+
+    res.status(201).json({ token, user: { id: user._id, username: user.username, email: user.email } });
   } catch (err) {
-    console.error('Catch error:', err.message);
+    console.error('Register error:', err.message);
     res.status(500).send('Server Error');
   }
 });
 
+// @route   POST api/auth/login
+// @desc    Authenticate user & get token
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -85,24 +72,24 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Username and password are required.' });
     }
 
-    usersDB.findOne({ username }, async (err, user) => {
-      if (err) return res.status(500).send('Server Error');
-      if (!user) {
-        return res.status(400).json({ message: 'No account found with that username.' });
-      }
+    // Find user in MongoDB
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ message: 'No account found with that username.' });
+    }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ message: 'Incorrect password. Please try again.' });
-      }
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect password. Please try again.' });
+    }
 
-      const payload = { userId: user._id };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+    const payload = { userId: user._id };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 
-      res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
-    });
+    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
   } catch (err) {
-    console.error(err.message);
+    console.error('Login error:', err.message);
     res.status(500).send('Server Error');
   }
 });
