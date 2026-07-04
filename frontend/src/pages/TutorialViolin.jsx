@@ -230,7 +230,7 @@ const TutorialViolin = () => {
               return (
                 <div key={`label-${str.name}`} style={{
                   position: 'absolute',
-                  right: -40, top: 12 + str.y * 48,
+                  right: 'var(--violin-label-right, -40px)', top: 12 + str.y * 48,
                   fontSize: '0.9rem', fontWeight: 700,
                   color: isActive ? str.color : '#6b7280',
                   transition: 'color 0.3s',

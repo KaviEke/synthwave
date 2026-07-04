@@ -565,10 +565,10 @@ export default function VocalTuner() {
   const hubOnline = deviceStatus?.active;
 
   return (
-    <div style={{ flex: 1, display: 'flex', gap: '2rem', padding: '2rem 3rem', overflow: 'hidden', minHeight: 0 }}>
+    <div className="responsive-flex-row-to-col" style={{ flex: 1, gap: '2rem', padding: 'var(--panel-padding-medium)', minHeight: 0 }}>
 
       {/* LEFT PANEL */}
-      <motion.div style={{ width: '300px', display: 'flex', flexDirection: 'column', gap: '1.2rem', overflowY: 'auto' }}
+      <motion.div style={{ width: 'var(--sidebar-width, 300px)', display: 'flex', flexDirection: 'column', gap: '1.2rem', overflowY: 'var(--sidebar-overflow, auto)' }}
         initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
 
         {/* Scale & Key */}

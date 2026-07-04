@@ -194,8 +194,8 @@ const TutorialDrum = () => {
                 } : {}}
                 transition={isActive ? { duration: 0.8, repeat: Infinity } : {}}
                 style={{
-                  width: 100,
-                  height: 100,
+                  width: 'var(--drum-pad-size, 100px)',
+                  height: 'var(--drum-pad-size, 100px)',
                   borderRadius: '50%',
                   background: isActive
                     ? `radial-gradient(circle, ${pad.color}44, ${pad.color}11)`

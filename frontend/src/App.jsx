@@ -29,6 +29,7 @@ const Navigation = () => {
   const { user, logout } = useContext(AuthContext);
   const { currentNote } = useContext(SocketContext);
   const [activeInstrument, setActiveInstrument] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -37,14 +38,22 @@ const Navigation = () => {
     }
   }, [currentNote]);
 
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location]);
+
   return (
     <nav className="nav-bar" style={{ 
       position: 'fixed', 
       top: 0, 
       width: '100%', 
-      zIndex: 50
+      zIndex: 50,
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      boxSizing: 'border-box'
     }}>
-      <div style={{fontWeight: '900', fontSize: '1.4rem', color: 'var(--text-main)', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+      <div style={{fontWeight: '900', fontSize: '1.4rem', color: 'var(--text-main)', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap'}}>
         <span style={{ display: 'inline-block', width: '24px', height: '24px', background: 'var(--primary)', borderRadius: '50%' }}></span>
         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>SYNTRONICS</Link>
         {activeInstrument && (
@@ -53,7 +62,26 @@ const Navigation = () => {
           </span>
         )}
       </div>
-      <div className="nav-links">
+
+      {/* Mobile Menu Toggle Button */}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="mobile-toggle"
+        style={{
+          background: 'none',
+          border: 'none',
+          fontSize: '1.8rem',
+          cursor: 'pointer',
+          color: 'var(--text-main)',
+          padding: '4px',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        {isOpen ? '✕' : '☰'}
+      </button>
+
+      <div className={`nav-links ${isOpen ? 'mobile-open' : ''}`}>
         {user ? (
           <>
             <Link to="/live">Live Session</Link>

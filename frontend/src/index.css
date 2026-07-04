@@ -7,6 +7,19 @@
   --secondary: #3b82f6;
   --text-main: #0f172a;
   --text-muted: #475569;
+
+  /* Responsive Variables */
+  --section-padding: 4rem 6rem;
+  --section-padding-large: 6rem;
+  --hero-font-size: 4.5rem;
+  --h2-font-size: 3rem;
+  --panel-padding: 3rem 4rem;
+  --panel-padding-medium: 3rem;
+  --piano-key-height: 140px;
+  --drum-pad-size: 100px;
+  --sidebar-width: 300px;
+  --sidebar-overflow: auto;
+  --violin-label-right: -40px;
 }
 
 * {
@@ -169,4 +182,90 @@ input:focus {
   color: #ef4444;
   font-size: 0.875rem;
   text-align: center;
+}
+
+/* --- Mobile / Responsive Overrides --- */
+
+.mobile-toggle {
+  display: none !important;
+}
+
+/* Responsive layouts */
+.responsive-flex-row-to-col {
+  display: flex;
+  flex-direction: row;
+}
+
+.responsive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --section-padding: 2rem 1.2rem;
+    --section-padding-large: 2.5rem 1.2rem;
+    --hero-font-size: 2.2rem;
+    --h2-font-size: 1.8rem;
+    --panel-padding: 2rem 1.2rem;
+    --panel-padding-medium: 1.5rem 1.2rem;
+    --piano-key-height: 100px;
+    --drum-pad-size: 75px;
+    --sidebar-width: 100%;
+    --sidebar-overflow: visible;
+    --violin-label-right: 10px;
+  }
+
+  .mobile-toggle {
+    display: flex !important;
+  }
+
+  /* Force vertical stacking on mobile */
+  .responsive-flex-row-to-col {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+    overflow-y: auto !important;
+  }
+  
+  .responsive-flex-row-to-col > div {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .responsive-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+  
+  .responsive-header > div {
+    width: 100%;
+  }
+
+  /* Navbar styling overrides for mobile drawer */
+  .nav-bar {
+    padding: 0.8rem 1.2rem !important;
+  }
+
+  .nav-links {
+    display: none; /* Hidden by default, toggled via React state */
+  }
+
+  .nav-links.mobile-open {
+    display: flex !important;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 1.5rem;
+    gap: 1.2rem;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    align-items: center;
+    z-index: 100;
+  }
 }

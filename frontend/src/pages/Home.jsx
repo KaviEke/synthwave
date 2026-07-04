@@ -18,13 +18,13 @@ function Home() {
       <ParticleCursor />
       
       {/* Hero Section */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '4rem 6rem', minHeight: '80vh', display: 'flex', alignItems: 'center' }}>
+      <section style={{ position: 'relative', zIndex: 1, padding: 'var(--section-padding)', minHeight: '80vh', display: 'flex', alignItems: 'center' }}>
         <div style={{ maxWidth: '600px' }}>
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            style={{ fontSize: '4.5rem', fontWeight: 900, lineHeight: 1.1, marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-main)' }}
+            style={{ fontSize: 'var(--hero-font-size)', fontWeight: 900, lineHeight: 1.1, marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-main)' }}
           >
             Live Your Day <br/> <span style={{ color: 'var(--primary)' }}>With Music</span>
           </motion.h1>
@@ -82,9 +82,9 @@ function Home() {
       </section>
 
       {/* Final Products Section */}
-      <section style={{ padding: '6rem', backgroundColor: 'rgba(255,255,255,0.4)', position: 'relative', zIndex: 1 }}>
+      <section style={{ padding: 'var(--section-padding-large)', backgroundColor: 'rgba(255,255,255,0.4)', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '3rem', fontWeight: 800, textAlign: 'center', marginBottom: '3rem', color: 'var(--text-main)' }}>Our Products</h2>
+          <h2 style={{ fontSize: 'var(--h2-font-size)', fontWeight: 800, textAlign: 'center', marginBottom: '3rem', color: 'var(--text-main)' }}>Our Products</h2>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem' }}>
             
@@ -120,11 +120,11 @@ function Home() {
       </section>
 
       {/* Developer Team Section */}
-      <section style={{ padding: '6rem', position: 'relative', zIndex: 1 }}>
+      <section style={{ padding: 'var(--section-padding-large)', position: 'relative', zIndex: 1 }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '3rem', fontWeight: 800, textAlign: 'center', marginBottom: '4rem', color: 'var(--text-main)' }}>Meet The Developers</h2>
+          <h2 style={{ fontSize: 'var(--h2-font-size)', fontWeight: 800, textAlign: 'center', marginBottom: '4rem', color: 'var(--text-main)' }}>Meet The Developers</h2>
           
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4rem', justifyContent: 'center' }}>
+          <div className="responsive-flex-row-to-col" style={{ display: 'flex', gap: '4rem', justifyContent: 'center' }}>
             
             {/* Developer 1 */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '350px' }}>

@@ -38,8 +38,10 @@ const InteractiveInstrument = ({ instrument }) => {
   return (
     <motion.div
       style={{
-        width: '400px',
-        height: '400px',
+        width: '100%',
+        maxWidth: '400px',
+        height: 'auto',
+        aspectRatio: '1',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',

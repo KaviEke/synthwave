@@ -234,7 +234,7 @@ const TutorialPiano = () => {
 
       {/* Piano Keyboard */}
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
-        <div style={{ ...panelStyle, padding: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ ...panelStyle, padding: 'var(--panel-padding-medium)', display: 'flex', justifyContent: 'center', gap: '0.4rem', flexWrap: 'nowrap' }}>
           {PIANO_KEYS.map((key) => {
             const isActive = key === expectedNote;
             return (
@@ -245,8 +245,10 @@ const TutorialPiano = () => {
                 } : {}}
                 transition={isActive ? { duration: 1, repeat: Infinity } : {}}
                 style={{
-                  width: 72,
-                  height: 140,
+                  flex: '1 1 0',
+                  minWidth: '32px',
+                  maxWidth: '72px',
+                  height: 'var(--piano-key-height, 140px)',
                   background: isActive
                     ? `linear-gradient(180deg, ${ACCENT}33, ${ACCENT}11)`
                     : 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',

@@ -106,11 +106,11 @@ export default function Dashboard() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', padding: '2rem', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ minHeight: '100vh', padding: 'var(--panel-padding-medium)', fontFamily: "'Inter', system-ui, sans-serif" }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
         {/* 1. HEADER */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: `1px solid ${colors.border}`, paddingBottom: '1rem' }}>
+        <div className="responsive-header" style={{ borderBottom: `1px solid ${colors.border}`, paddingBottom: '1rem' }}>
           <div>
             <h1 style={{ fontSize: '2.5rem', fontWeight: 800, margin: 0, color: colors.textMain }}>
               Performance Dashboard
@@ -175,7 +175,7 @@ export default function Dashboard() {
         </section>
 
         {/* 3. CONTROLLER STATUS CARDS */}
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
           {/* Controller 1 */}
           <div style={panelStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
@@ -228,7 +228,7 @@ export default function Dashboard() {
         </section>
 
         {/* 4 & 5. LIVE MONITOR & VISUALIZER */}
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
 
           {/* LIVE MONITOR */}
           <div style={{ ...panelStyle, display: 'flex', flexDirection: 'column' }}>
@@ -390,7 +390,7 @@ export default function Dashboard() {
         </section>
 
         {/* 6 & 7. AUDIO & GESTURE */}
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
 
           {/* AUDIO CONTROL */}
           <div style={panelStyle}>
