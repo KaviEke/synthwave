@@ -73,7 +73,13 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} (Bound to 0.0.0.0)`);
-});
+// Export the Express app for Vercel Serverless Functions
+module.exports = app;
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT} (Bound to 0.0.0.0)`);
+  });
+}
+
