@@ -10,6 +10,11 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 require('dotenv').config();
 
+const connectDB = require('./config/db');
+
+// Connect to Database
+connectDB();
+
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 
@@ -31,8 +36,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/session', apiRoutes);
 
-// Database Connection logging (now using built-in NeDB inside routes)
-console.log('Using Local NeDB Flat-File Database');
+// Database Connection logging (using MongoDB Atlas)
+console.log('Database configuration loaded.');
 
 // Socket.io Real-time Communication
 io.on('connection', (socket) => {
