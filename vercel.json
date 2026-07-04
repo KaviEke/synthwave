@@ -15,24 +15,8 @@
             "destination": { "service": "backend" }
         },
         {
-            "source": "/assets/(.*)",
-            "destination": { "service": "frontend" }
-        },
-        {
-            "source": "/images/(.*)",
-            "destination": { "service": "frontend" }
-        },
-        {
-            "source": "/favicon.svg",
-            "destination": { "service": "frontend" }
-        },
-        {
-            "source": "/icons.svg",
-            "destination": { "service": "frontend" }
-        },
-        {
             "source": "/(.*)",
-            "destination": { "service": "frontend", "path": "/index.html" }
+            "destination": { "service": "frontend" }
         }
     ]
 }
