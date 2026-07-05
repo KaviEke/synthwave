@@ -1,6 +1,6 @@
 import React, { Suspense, useRef, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, ContactShadows } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 /* ─── Easing ─── */
@@ -176,24 +176,33 @@ export default function ProductShowcase3D() {
           marginTop: '1rem',
         }}>
 
-          {/* 3D Canvas — compact, transparent */}
+          {/* 3D Canvas — no container, fully transparent */}
           <div style={{
             position: 'relative',
             width: '380px',
             height: '340px',
             flexShrink: 0,
+            overflow: 'visible',
+            background: 'none',
+            border: 'none',
+            boxShadow: 'none',
+            outline: 'none',
           }}>
             <LoadingSpinner visible={isLoading} />
 
             <Canvas
               shadows
               camera={{ position: [0, 0.8, 4.5], fov: 40, near: 0.1, far: 50 }}
-              style={{ width: '100%', height: '100%' }}
+              style={{ width: '100%', height: '100%', background: 'transparent' }}
               gl={{
                 antialias: true,
                 alpha: true,
                 toneMapping: THREE.ACESFilmicToneMapping,
                 toneMappingExposure: 1.2,
+                setClearColor: undefined,
+              }}
+              onCreated={({ gl }) => {
+                gl.setClearColor(0x000000, 0);
               }}
             >
               <Lights />
@@ -202,13 +211,6 @@ export default function ProductShowcase3D() {
                   url="/Synth+Wave+Left+Hand.glb"
                   scrollProgress={scrollProgress}
                   onLoaded={handleLoaded}
-                />
-                <ContactShadows
-                  position={[0, -1.2, 0]}
-                  opacity={0.3}
-                  scale={8}
-                  blur={2.5}
-                  far={3}
                 />
               </Suspense>
             </Canvas>
