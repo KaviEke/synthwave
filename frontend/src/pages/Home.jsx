@@ -95,7 +95,7 @@ function Home() {
             {/* Developer 1 */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '300px' }}>
               <motion.div whileHover={{ scale: 1.05 }} style={{ width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                <img src="/images/kavindu.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop"}} alt="Kavindu Ekanayaka" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src="/images/kavindu2.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop"}} alt="Kavindu Ekanayaka" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </motion.div>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>Kavindu Ekanayaka</h3>
               <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', textAlign: 'center' }}>Lead Software Architect<br/>Web Developer & AI Engineer</p>
