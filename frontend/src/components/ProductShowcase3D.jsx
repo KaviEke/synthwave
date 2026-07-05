@@ -24,7 +24,7 @@ function ScrollModel({ url, scrollProgress, onLoaded }) {
     scene.position.sub(center);
 
     const maxDim = Math.max(size.x, size.y, size.z);
-    baseScale.current = 1.8 / maxDim;
+    baseScale.current = 1.0 / maxDim;
     scene.scale.setScalar(baseScale.current);
 
     const newBox = new THREE.Box3().setFromObject(scene);
@@ -133,7 +133,7 @@ export default function ProductShowcase3D() {
         transition: 'opacity 0.8s ease',
       }}>
         <Canvas
-          camera={{ position: [0, 0.5, 4], fov: 40, near: 0.1, far: 50 }}
+          camera={{ position: [0, 0.5, 5.5], fov: 36, near: 0.1, far: 50 }}
           style={{ width: '100%', height: '100%' }}
           gl={{
             antialias: true,
