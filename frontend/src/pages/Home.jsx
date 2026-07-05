@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import ParticleCursor from '../components/ParticleCursor';
-import ProductShowcase3D from '../components/ProductShowcase3D';
+import Background3D from '../components/Background3D';
 import { AuthContext } from '../context/AuthContext';
 
 function Home() {
@@ -16,6 +16,8 @@ function Home() {
       position: 'relative',
       color: 'var(--text-main)'
     }}>
+      {/* Fixed 3D model background — animates on scroll */}
+      <Background3D />
       <ParticleCursor />
       
       {/* Hero Section */}
@@ -82,8 +84,6 @@ function Home() {
         </div>
       </section>
 
-      {/* 3D Product Showcase Section */}
-      <ProductShowcase3D />
 
       {/* Developer Team Section */}
       <section style={{ padding: 'var(--section-padding-large)', position: 'relative', zIndex: 1 }}>
