@@ -87,33 +87,54 @@ function Home() {
 
       {/* Developer Team Section */}
       <section style={{ padding: 'var(--section-padding-large)', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <h2 style={{ fontSize: 'var(--h2-font-size)', fontWeight: 800, textAlign: 'center', marginBottom: '4rem', color: 'var(--text-main)' }}>Meet The Developers</h2>
           
-          <div className="responsive-flex-row-to-col" style={{ display: 'flex', gap: '4rem', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3rem', justifyContent: 'center' }}>
             
             {/* Developer 1 */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '350px' }}>
-              <motion.div whileHover={{ scale: 1.05 }} style={{ width: '200px', height: '200px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop" alt="Kavindu Ekanayaka" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '300px' }}>
+              <motion.div whileHover={{ scale: 1.05 }} style={{ width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                <img src="/images/kavindu.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop"}} alt="Kavindu Ekanayaka" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </motion.div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Kavindu Ekanayaka</h3>
-              <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Lead Hardware Engineer</p>
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Specializes in IoT integration, embedded systems, and translating physical gestures into pristine digital midi signals.
-              </p>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>Kavindu Ekanayaka</h3>
+              <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', textAlign: 'center' }}>Lead Software Architect<br/>Web Developer & AI Engineer</p>
             </div>
 
             {/* Developer 2 */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '350px' }}>
-              <motion.div whileHover={{ scale: 1.05 }} style={{ width: '200px', height: '200px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=400&auto=format&fit=crop" alt="Chamoth Liyanaarachchi" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '300px' }}>
+              <motion.div whileHover={{ scale: 1.05 }} style={{ width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                <img src="/images/chamoth.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=400&auto=format&fit=crop"}} alt="Chamoth Liyanaarachchi" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </motion.div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Chamoth Liyanaarachchi</h3>
-              <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Lead Software Developer</p>
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                Expert in React, Node.js, and real-time socket communication. Focuses on delivering smooth, low-latency web experiences.
-              </p>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>Chamoth Liyanaarachchi</h3>
+              <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', textAlign: 'center' }}>Lead Hardware Engineer<br/>PCB Design & AI Engineer</p>
+            </div>
+
+            {/* Developer 3 */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '300px' }}>
+              <motion.div whileHover={{ scale: 1.05 }} style={{ width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                <img src="/images/idumini.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=400&auto=format&fit=crop"}} alt="Idumini Wathsala" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </motion.div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>Idumini Wathsala</h3>
+              <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', textAlign: 'center' }}>Associate Software, Hardware<br/>& AI Engineer</p>
+            </div>
+
+            {/* Developer 4 */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '300px' }}>
+              <motion.div whileHover={{ scale: 1.05 }} style={{ width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                <img src="/images/michael.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop"}} alt="Michael Sharon" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </motion.div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>Michael Sharon</h3>
+              <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', textAlign: 'center' }}>Associate Software<br/>& Firmware Engineer</p>
+            </div>
+
+            {/* Developer 5 */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '300px' }}>
+              <motion.div whileHover={{ scale: 1.05 }} style={{ width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                <img src="/images/shrinitha.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop"}} alt="Shrinitha" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </motion.div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>Shrinitha</h3>
+              <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', textAlign: 'center' }}>Associate Software<br/>& Firmware Engineer</p>
             </div>
 
           </div>
