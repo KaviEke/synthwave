@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import ParticleCursor from '../components/ParticleCursor';
+import ProductShowcase3D from '../components/ProductShowcase3D';
 import { AuthContext } from '../context/AuthContext';
 
 function Home() {
@@ -81,43 +82,8 @@ function Home() {
         </div>
       </section>
 
-      {/* Final Products Section */}
-      <section style={{ padding: 'var(--section-padding-large)', backgroundColor: 'rgba(255,255,255,0.4)', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'var(--h2-font-size)', fontWeight: 800, textAlign: 'center', marginBottom: '3rem', color: 'var(--text-main)' }}>Our Products</h2>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem' }}>
-            
-            {/* Product 1 */}
-            <motion.div whileHover={{ y: -10 }} className="glass-panel" style={{ overflow: 'hidden', background: 'white' }}>
-              <img src="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?q=80&w=600&auto=format&fit=crop" alt="Piano Controller" style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
-              <div style={{ padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Smart Piano Controller</h3>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>A highly responsive IoT-enabled piano interface offering tactile feedback and real-time midi synthesis.</p>
-              </div>
-            </motion.div>
-
-            {/* Product 2 */}
-            <motion.div whileHover={{ y: -10 }} className="glass-panel" style={{ overflow: 'hidden', background: 'white' }}>
-              <img src="https://images.unsplash.com/photo-1460036521480-c1b783b9c623?q=80&w=600&auto=format&fit=crop" alt="Violin Bow" style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
-              <div style={{ padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Gyro Bow Sensor</h3>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>Attach this gyro sensor to any traditional violin bow to track meend, vibrato, and velocity flawlessly.</p>
-              </div>
-            </motion.div>
-
-            {/* Product 3 */}
-            <motion.div whileHover={{ y: -10 }} className="glass-panel" style={{ overflow: 'hidden', background: 'white' }}>
-              <img src="https://images.unsplash.com/photo-1519892300165-cb5542fb47c7?q=80&w=600&auto=format&fit=crop" alt="Drum Pads" style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
-              <div style={{ padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>USB Kick & Pads</h3>
-                <p style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>High-speed, zero-latency percussion pads with dynamic velocity sensing for the perfect beat.</p>
-              </div>
-            </motion.div>
-
-          </div>
-        </div>
-      </section>
+      {/* 3D Product Showcase Section */}
+      <ProductShowcase3D />
 
       {/* Developer Team Section */}
       <section style={{ padding: 'var(--section-padding-large)', position: 'relative', zIndex: 1 }}>
