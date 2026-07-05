@@ -8,7 +8,7 @@ function easeOutCubic(t) {
   return 1 - Math.pow(1 - t, 3);
 }
 
-/* ─── Scroll-animated 3D Model ─── */
+/* ─── Scroll-animated Model ─── */
 function ScrollModel({ url, scrollProgress, onLoaded }) {
   const { scene } = useGLTF(url);
   const groupRef = useRef();
@@ -24,12 +24,11 @@ function ScrollModel({ url, scrollProgress, onLoaded }) {
     scene.position.sub(center);
 
     const maxDim = Math.max(size.x, size.y, size.z);
-    baseScale.current = 2.0 / maxDim;
+    baseScale.current = 1.8 / maxDim;
     scene.scale.setScalar(baseScale.current);
 
     const newBox = new THREE.Box3().setFromObject(scene);
-    const newCenter = newBox.getCenter(new THREE.Vector3());
-    scene.position.sub(newCenter);
+    scene.position.sub(newBox.getCenter(new THREE.Vector3()));
 
     scene.traverse((child) => {
       if (child.isMesh) {
@@ -48,26 +47,23 @@ function ScrollModel({ url, scrollProgress, onLoaded }) {
     const p = scrollProgress.current;
     const time = state.clock.elapsedTime;
 
-    // Entrance: scale from 0.2 → 1.0
+    // Scale morph: 0 → 1
     const scaleT = Math.min(p * 2.5, 1);
-    const easedScale = easeOutCubic(scaleT);
-    const s = THREE.MathUtils.lerp(0.2, 1.0, easedScale) * baseScale.current;
+    const s = easeOutCubic(scaleT) * baseScale.current;
     groupRef.current.scale.setScalar(s);
 
-    // Entrance: fly in from z = -8 → 0
+    // Slide in from behind
     const posT = Math.min(p * 2.0, 1);
-    const easedPos = easeOutCubic(posT);
-    groupRef.current.position.z = THREE.MathUtils.lerp(-8, 0, easedPos);
-    groupRef.current.position.y = THREE.MathUtils.lerp(-1, 0, easedPos);
+    groupRef.current.position.z = THREE.MathUtils.lerp(-5, 0, easeOutCubic(posT));
 
-    // Entrance rotation + gentle idle spin
-    const rotT = Math.min(p * 1.8, 1);
-    const entranceRot = THREE.MathUtils.lerp(Math.PI * 1.5, 0, easeOutCubic(rotT));
-    const idleRot = p > 0.5 ? time * 0.2 : 0;
-    groupRef.current.rotation.y = entranceRot + idleRot;
+    // Entrance spin + idle rotation
+    const rotT = Math.min(p * 1.6, 1);
+    const entrance = THREE.MathUtils.lerp(Math.PI, 0, easeOutCubic(rotT));
+    const idle = p > 0.4 ? time * 0.15 : 0;
+    groupRef.current.rotation.y = entrance + idle;
 
-    // Subtle float
-    groupRef.current.position.y += Math.sin(time * 0.7) * 0.04;
+    // Gentle float
+    groupRef.current.position.y = Math.sin(time * 0.6) * 0.04;
   });
 
   return (
@@ -82,34 +78,10 @@ function Lights() {
   return (
     <>
       <ambientLight intensity={0.5} color="#d0e0f0" />
-      <directionalLight position={[5, 8, 5]} intensity={1.8} color="#fff5e6" castShadow />
+      <directionalLight position={[5, 8, 5]} intensity={1.8} color="#fff5e6" />
       <directionalLight position={[-4, 3, -3]} intensity={0.5} color="#a0c4f1" />
       <pointLight position={[0, 5, -5]} intensity={0.6} color="#7dd3fc" distance={20} decay={2} />
     </>
-  );
-}
-
-/* ─── Loading Spinner ─── */
-function LoadingSpinner({ visible }) {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0, left: 0, width: '100%', height: '100%',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        opacity: visible ? 1 : 0,
-        pointerEvents: 'none',
-        transition: 'opacity 0.6s ease',
-      }}
-    >
-      <div style={{
-        width: '36px', height: '36px',
-        border: '3px solid rgba(14,165,233,0.12)',
-        borderTopColor: '#0ea5e9',
-        borderRadius: '50%',
-        animation: 'model-spin 0.8s linear infinite',
-      }} />
-    </div>
   );
 }
 
@@ -123,7 +95,6 @@ export default function ProductShowcase3D() {
     setTimeout(() => setIsLoading(false), 300);
   }, []);
 
-  // Track scroll position relative to this section
   useEffect(() => {
     const onScroll = () => {
       if (!sectionRef.current) return;
@@ -141,144 +112,131 @@ export default function ProductShowcase3D() {
     <section
       ref={sectionRef}
       style={{
-        padding: '4rem 2rem',
         position: 'relative',
         zIndex: 1,
+        minHeight: '80vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
       }}
     >
+      {/* ── 3D Canvas: absolute-fill behind all content ── */}
       <div style={{
-        maxWidth: '1000px',
-        margin: '0 auto',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: 0,
+        opacity: isLoading ? 0 : 1,
+        transition: 'opacity 0.8s ease',
       }}>
-
-        {/* Section Title */}
-        <h2 style={{
-          fontSize: 'var(--h2-font-size)',
-          fontWeight: 800,
-          color: 'var(--text-main)',
-          textAlign: 'center',
-          marginBottom: '1rem',
-        }}>
-          Our Product
-        </h2>
-
-        {/* 3D Viewer + Description — side by side on desktop */}
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '2.5rem',
-          width: '100%',
-          marginTop: '1rem',
-        }}>
-
-          {/* 3D Canvas — no container, fully transparent */}
-          <div style={{
-            position: 'relative',
-            width: '380px',
-            height: '340px',
-            flexShrink: 0,
-            overflow: 'visible',
-            background: 'none',
-            border: 'none',
-            boxShadow: 'none',
-            outline: 'none',
-          }}>
-            <LoadingSpinner visible={isLoading} />
-
-            <Canvas
-              shadows
-              camera={{ position: [0, 0.8, 4.5], fov: 40, near: 0.1, far: 50 }}
-              style={{ width: '100%', height: '100%', background: 'transparent' }}
-              gl={{
-                antialias: true,
-                alpha: true,
-                toneMapping: THREE.ACESFilmicToneMapping,
-                toneMappingExposure: 1.2,
-                setClearColor: undefined,
-              }}
-              onCreated={({ gl }) => {
-                gl.setClearColor(0x000000, 0);
-              }}
-            >
-              <Lights />
-              <Suspense fallback={null}>
-                <ScrollModel
-                  url="/Synth+Wave+Left+Hand.glb"
-                  scrollProgress={scrollProgress}
-                  onLoaded={handleLoaded}
-                />
-              </Suspense>
-            </Canvas>
-          </div>
-
-          {/* Description */}
-          <div style={{
-            maxWidth: '420px',
-            flex: '1 1 300px',
-          }}>
-            <h3 style={{
-              fontSize: '1.6rem',
-              fontWeight: 700,
-              color: 'var(--text-main)',
-              marginBottom: '1rem',
-              lineHeight: 1.3,
-            }}>
-              Synth Wave Controller
-            </h3>
-            <p style={{
-              fontSize: '1rem',
-              color: 'var(--text-muted)',
-              lineHeight: 1.75,
-              marginBottom: '1.25rem',
-            }}>
-              A next-generation IoT music controller that transforms hand gestures into expressive
-              digital sound. Engineered with precision accelerometers and gyroscopic sensors, the
-              Synth Wave captures every nuance of your movement — from sweeping bows to subtle
-              finger vibrato — and maps them to MIDI parameters in real time.
-            </p>
-            <p style={{
-              fontSize: '1rem',
-              color: 'var(--text-muted)',
-              lineHeight: 1.75,
-              marginBottom: '1.5rem',
-            }}>
-              Whether you're a pianist, violinist, or percussionist, this single device adapts to
-              your instrument and playing style. Connect wirelessly, practice with live visual
-              feedback on our web dashboard, and take your music to the next level.
-            </p>
-
-            {/* Feature tags */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {['Real-time MIDI', 'Gyro Sensors', 'Wireless', 'Multi-Instrument', 'Low Latency'].map((tag, i) => (
-                <span key={i} style={{
-                  padding: '0.35rem 0.85rem',
-                  borderRadius: '20px',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  letterSpacing: '0.02em',
-                  background: 'rgba(14, 165, 233, 0.08)',
-                  color: 'var(--primary)',
-                  border: '1px solid rgba(14, 165, 233, 0.15)',
-                }}>
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
-        </div>
+        <Canvas
+          camera={{ position: [0, 0.5, 4], fov: 40, near: 0.1, far: 50 }}
+          style={{ width: '100%', height: '100%' }}
+          gl={{
+            antialias: true,
+            alpha: true,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.2,
+          }}
+          onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+        >
+          <Lights />
+          <Suspense fallback={null}>
+            <ScrollModel
+              url="/Synth+Wave+Left+Hand.glb"
+              scrollProgress={scrollProgress}
+              onLoaded={handleLoaded}
+            />
+          </Suspense>
+        </Canvas>
       </div>
 
-      <style>{`
-        @keyframes model-spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      {/* ── Foreground content on top of the 3D model ── */}
+      <div style={{
+        position: 'relative',
+        zIndex: 1,
+        maxWidth: '1000px',
+        width: '100%',
+        padding: '4rem 2rem',
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '3rem',
+      }}>
+        {/* Left: text content */}
+        <div style={{
+          flex: '1 1 360px',
+          maxWidth: '480px',
+        }}>
+          <p style={{
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.15em',
+            color: 'var(--primary)',
+            marginBottom: '0.75rem',
+          }}>
+            Introducing
+          </p>
+          <h2 style={{
+            fontSize: 'clamp(2rem, 4vw, 3rem)',
+            fontWeight: 800,
+            color: 'var(--text-main)',
+            lineHeight: 1.15,
+            marginBottom: '1.25rem',
+          }}>
+            Synth Wave<br />Controller
+          </h2>
+          <p style={{
+            fontSize: '1rem',
+            color: 'var(--text-muted)',
+            lineHeight: 1.75,
+            marginBottom: '1.25rem',
+          }}>
+            A next-generation IoT music controller that transforms hand gestures
+            into expressive digital sound. Engineered with precision accelerometers
+            and gyroscopic sensors to capture every nuance of your movement.
+          </p>
+          <p style={{
+            fontSize: '0.95rem',
+            color: 'var(--text-muted)',
+            lineHeight: 1.75,
+            marginBottom: '1.5rem',
+          }}>
+            Whether you're a pianist, violinist, or percussionist — connect wirelessly,
+            practice with live visual feedback, and take your music to the next level.
+          </p>
+
+          {/* Feature tags */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {['Real-time MIDI', 'Gyro Sensors', 'Wireless', 'Multi-Instrument', 'Low Latency'].map((tag, i) => (
+              <span key={i} style={{
+                padding: '0.3rem 0.75rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                background: 'rgba(14, 165, 233, 0.08)',
+                color: 'var(--primary)',
+                border: '1px solid rgba(14, 165, 233, 0.15)',
+              }}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: empty spacer so the 3D model shows through */}
+        <div style={{
+          flex: '1 1 340px',
+          maxWidth: '400px',
+          minHeight: '320px',
+        }} />
+      </div>
     </section>
   );
 }
