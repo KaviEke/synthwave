@@ -165,8 +165,9 @@ export default function ProductShowcase3D() {
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: '3rem',
+        justifyContent: 'space-between',
+        margin: '0 auto',
+        gap: '2rem',
       }}>
         {/* Left: text content */}
         <div style={{
