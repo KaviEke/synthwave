@@ -52,9 +52,10 @@ function ScrollModel({ url, scrollProgress, onLoaded }) {
     const s = easeOutCubic(scaleT) * baseScale.current;
     groupRef.current.scale.setScalar(s);
 
-    // Slide in from behind
+    // Slide in from behind, positioning model on the right
     const posT = Math.min(p * 2.0, 1);
     groupRef.current.position.z = THREE.MathUtils.lerp(-5, 0, easeOutCubic(posT));
+    groupRef.current.position.x = THREE.MathUtils.lerp(3, 1.5, easeOutCubic(posT)); // Animate in from further right to resting position on the right
 
     // Entrance spin + idle rotation
     const rotT = Math.min(p * 1.6, 1);
@@ -171,6 +172,7 @@ export default function ProductShowcase3D() {
         <div style={{
           flex: '1 1 360px',
           maxWidth: '480px',
+          textAlign: 'left',
         }}>
           <p style={{
             fontSize: '0.8rem',
