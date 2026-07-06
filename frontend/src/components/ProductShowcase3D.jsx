@@ -17,9 +17,9 @@ function Model({ url, position = [0, 0, 0], onLoaded }) {
 
       scene.position.sub(center);
 
-      // Scale to fit viewport nicely
+      // Scale to fit viewport nicely and prevent overlapping
       const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 2.8 / maxDim;
+      const scale = 1.6 / maxDim;
       scene.scale.setScalar(scale);
 
       // Recompute after scaling
@@ -252,12 +252,12 @@ export default function ProductShowcase3D() {
             <Suspense fallback={null}>
               <Model
                 url="/Synth+Wave+Left+Hand.glb"
-                position={[-1.5, 0, 0]}
+                position={[-2.0, 0, 0]}
                 onLoaded={handleLoaded}
               />
               <Model
                 url="/SynthWave.glb"
-                position={[1.5, 0, 0]}
+                position={[2.0, 0, 0]}
                 onLoaded={handleLoaded}
               />
               <ContactShadows
