@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import ParallaxBackground from '../components/ParallaxBackground';
+import ParticleCursor from '../components/ParticleCursor';
 
 function Register() {
   const { register } = useContext(AuthContext);
@@ -39,11 +39,7 @@ function Register() {
 
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative', overflow: 'hidden' }}>
-      <ParallaxBackground imageSrc="/images/pop2.png" opacity={0.2} blendMode="screen" />
-      
-      {/* Background Glowing Orbs */}
-      <div style={{ position: 'absolute', top: '10%', left: '25%', width: '400px', height: '400px', background: '#ec4899', borderRadius: '50%', filter: 'blur(150px)', opacity: 0.2, zIndex: 0, pointerEvents: 'none' }}></div>
-      <div style={{ position: 'absolute', bottom: '10%', right: '25%', width: '400px', height: '400px', background: '#10b981', borderRadius: '50%', filter: 'blur(150px)', opacity: 0.15, zIndex: 0, pointerEvents: 'none' }}></div>
+      <ParticleCursor />
 
       <motion.div 
         style={{ padding: '3rem 2.5rem', width: '100%', maxWidth: '450px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', zIndex: 1, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
@@ -80,12 +76,12 @@ function Register() {
             minLength="6"
             style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px' }}
           />
-          <button type="submit" className="btn-primary" style={{marginTop: '1.5rem', background: '#8b5cf6', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '1.1rem'}}>
+          <button type="submit" className="btn-primary" style={{marginTop: '1.5rem', background: 'var(--primary)', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '1.1rem'}}>
             Register Hardware
           </button>
         </form>
         <p style={{textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)'}}>
-          Already geared up? <Link to="/login" style={{color: '#c084fc', textDecoration: 'none', fontWeight: 'bold'}}>Sign In</Link>
+          Already geared up? <Link to="/login" style={{color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold'}}>Sign In</Link>
         </p>
       </motion.div>
     </div>

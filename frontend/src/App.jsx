@@ -132,7 +132,7 @@ function App() {
           </div>
           <footer style={{ marginTop: 'auto', paddingTop: '4rem', paddingBottom: '1.5rem', width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', position: 'relative', zIndex: 10 }}>
             <p>&copy; {new Date().getFullYear()} SYNTRONICS. All rights reserved.</p>
-            <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', opacity: 0.7 }}>Developed by Kavindu Ekanayaka and Chamoth Liyanaarachchi</p>
+
           </footer>
 
         </Router>
