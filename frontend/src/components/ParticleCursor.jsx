@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-const ParticleCursor = () => {
+const ParticleCursor = ({ forceScatter = false }) => {
   const canvasRef = useRef(null);
   
   useEffect(() => {
@@ -118,7 +118,7 @@ const ParticleCursor = () => {
       const fluidity = smoothedState; 
 
       const scrollThreshold = 150;
-      const targetScatter = Math.min(1.0, Math.max(0, scrollY / scrollThreshold));
+      const targetScatter = forceScatter ? 1.0 : Math.min(1.0, Math.max(0, scrollY / scrollThreshold));
 
       particles.forEach((p) => {
         p.currentScatterProgress += (targetScatter - p.currentScatterProgress) * 0.05;
