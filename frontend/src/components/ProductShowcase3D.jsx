@@ -49,14 +49,14 @@ function RotatableModel({ url, mouseRotation, onLoaded, isMobile }) {
     // Gentle idle float
     const floatY = Math.sin(time * 0.5) * 0.05;
 
-    // Center it
+    // Dead center position
     groupRef.current.position.x = 0;
     groupRef.current.position.y = floatY;
 
     groupRef.current.rotation.set(currentRot.current.x, currentRot.current.y, 0);
     
     // Scale up the model
-    groupRef.current.scale.setScalar(baseScale.current * (isMobile ? 1.6 : 2.0)); 
+    groupRef.current.scale.setScalar(baseScale.current * (isMobile ? 1.5 : 2.5)); 
   });
 
   return (
@@ -91,7 +91,7 @@ export default function ProductShowcase3D() {
     setTimeout(() => setIsLoading(false), 300);
   }, []);
 
-  // Mouse / touch tracking for rotation
+  // Mouse / touch tracking for rotation globally
   useEffect(() => {
     const onMouseMove = (e) => {
       const nx = (e.clientX / window.innerWidth - 0.5) * 2;
@@ -137,106 +137,23 @@ export default function ProductShowcase3D() {
       style={{
         position: 'relative',
         zIndex: 10,
-        minHeight: '85vh',
+        minHeight: '100vh',
         display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        maxWidth: '1400px',
-        margin: '0 auto',
-        padding: isMobile ? '0' : '0 2rem', // Give some outer padding on desktop
+        overflow: 'hidden', 
       }}
     >
-      {/* ── Left side: Text content ── */}
+      {/* ── Background 3D Canvas (Dead Center) ── */}
       <div style={{
-        position: 'relative',
-        zIndex: 20,
-        flex: isMobile ? 'none' : '0 0 45%',
-        width: isMobile ? '100%' : '45%',
-        padding: isMobile ? '2.5rem 1.5rem 1rem' : isTablet ? '3rem 2.5rem' : '4rem 2rem',
-      }}>
-        <p style={{
-          fontSize: '0.8rem',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.15em',
-          color: 'var(--primary)',
-          marginBottom: '0.75rem',
-        }}>
-          Introducing
-        </p>
-        <h2 style={{
-          fontSize: isMobile ? '1.8rem' : isTablet ? '2.2rem' : 'clamp(2rem, 4vw, 3rem)',
-          fontWeight: 800,
-          color: 'var(--text-main)',
-          lineHeight: 1.15,
-          marginBottom: '1.25rem',
-        }}>
-          Synth Wave<br />Controller
-        </h2>
-        <p style={{
-          fontSize: isMobile ? '0.9rem' : '1rem',
-          color: 'var(--text-muted)',
-          lineHeight: 1.75,
-          marginBottom: '1.25rem',
-        }}>
-          A next-generation IoT music controller that transforms hand gestures
-          into expressive digital sound. Engineered with precision accelerometers
-          and gyroscopic sensors to capture every nuance of your movement.
-        </p>
-        <p style={{
-          fontSize: isMobile ? '0.85rem' : '0.95rem',
-          color: 'var(--text-muted)',
-          lineHeight: 1.75,
-          marginBottom: '1.5rem',
-        }}>
-          Whether you're a pianist, violinist, or percussionist — connect wirelessly,
-          practice with live visual feedback, and take your music to the next level.
-        </p>
-
-        {/* Feature tags */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {['Real-time MIDI', 'Gyro Sensors', 'Wireless', 'Multi-Instrument', 'Low Latency'].map((tag, i) => (
-            <span key={i} style={{
-              padding: '0.3rem 0.75rem',
-              borderRadius: '20px',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              letterSpacing: '0.02em',
-              background: 'rgba(14, 165, 233, 0.08)',
-              color: 'var(--primary)',
-              border: '1px solid rgba(14, 165, 233, 0.15)',
-            }}>
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Interaction hint */}
-        <p style={{
-          marginTop: '1.5rem',
-          fontSize: '0.75rem',
-          color: 'var(--text-muted)',
-          opacity: 0.6,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-        }}>
-          <span style={{ fontSize: '1rem' }}>↕↔</span>
-          {isMobile ? 'Touch to rotate the 3D model' : 'Move your mouse to rotate the 3D model'}
-        </p>
-      </div>
-
-      {/* ── Right side: 3D Canvas Container ── */}
-      <div style={{
-        position: 'relative',
-        flex: isMobile ? 'none' : '1', // Take up remaining space (about 55%)
-        width: isMobile ? '100%' : '100%',
-        minHeight: isMobile ? '400px' : '650px', 
-        zIndex: 10,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: 0, // Behind the text
+        pointerEvents: 'none', // Let clicks pass through to the text
         opacity: isLoading ? 0 : 1,
         transition: 'opacity 0.8s ease',
-        // By containing it here, we guarantee it fits perfectly into the marked right side of the screen
       }}>
         <Canvas
           camera={{
@@ -245,7 +162,7 @@ export default function ProductShowcase3D() {
             near: 0.1,
             far: 50,
           }}
-          style={{ width: '100%', height: '100%', touchAction: 'none' }}
+          style={{ width: '100%', height: '100%' }}
           gl={{
             antialias: true,
             alpha: true,
@@ -264,6 +181,89 @@ export default function ProductShowcase3D() {
             />
           </Suspense>
         </Canvas>
+      </div>
+
+      {/* ── Foreground Text content ── */}
+      <div style={{
+        position: 'relative',
+        zIndex: 10, 
+        maxWidth: '1400px',
+        width: '100%',
+        margin: '0 auto',
+        padding: isMobile ? '2.5rem 1.5rem 1rem' : isTablet ? '3rem 2.5rem' : '4rem 4rem',
+      }}>
+        <div style={{ maxWidth: '600px', pointerEvents: 'auto' }}>
+          <p style={{
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.15em',
+            color: 'var(--primary)',
+            marginBottom: '0.75rem',
+          }}>
+            Introducing
+          </p>
+          <h2 style={{
+            fontSize: isMobile ? '1.8rem' : isTablet ? '2.2rem' : 'clamp(2rem, 4vw, 3rem)',
+            fontWeight: 800,
+            color: 'var(--text-main)',
+            lineHeight: 1.15,
+            marginBottom: '1.25rem',
+          }}>
+            Synth Wave<br />Controller
+          </h2>
+          <p style={{
+            fontSize: isMobile ? '0.9rem' : '1rem',
+            color: 'var(--text-muted)',
+            lineHeight: 1.75,
+            marginBottom: '1.25rem',
+          }}>
+            A next-generation IoT music controller that transforms hand gestures
+            into expressive digital sound. Engineered with precision accelerometers
+            and gyroscopic sensors to capture every nuance of your movement.
+          </p>
+          <p style={{
+            fontSize: isMobile ? '0.85rem' : '0.95rem',
+            color: 'var(--text-muted)',
+            lineHeight: 1.75,
+            marginBottom: '1.5rem',
+          }}>
+            Whether you're a pianist, violinist, or percussionist — connect wirelessly,
+            practice with live visual feedback, and take your music to the next level.
+          </p>
+
+          {/* Feature tags */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {['Real-time MIDI', 'Gyro Sensors', 'Wireless', 'Multi-Instrument', 'Low Latency'].map((tag, i) => (
+              <span key={i} style={{
+                padding: '0.3rem 0.75rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                background: 'rgba(14, 165, 233, 0.08)',
+                color: 'var(--primary)',
+                border: '1px solid rgba(14, 165, 233, 0.15)',
+              }}>
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Interaction hint */}
+          <p style={{
+            marginTop: '1.5rem',
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            opacity: 0.6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}>
+            <span style={{ fontSize: '1rem' }}>↕↔</span>
+            {isMobile ? 'Touch to rotate the 3D model' : 'Move your mouse to rotate the 3D model'}
+          </p>
+        </div>
       </div>
     </section>
   );
