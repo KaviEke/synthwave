@@ -44,7 +44,7 @@ const ScatteredNotes = () => {
       offscreenCanvases[note] = offCanvas;
     });
 
-    const numParticles = 300; 
+    const numParticles = 800; 
     const particles = [];
 
     // Distribute particles spherically then scatter them massively
