@@ -20,7 +20,7 @@ function Home() {
       
       {/* Hero Section */}
       <section style={{ position: 'relative', zIndex: 1, padding: 'var(--section-padding)', minHeight: '80vh', display: 'flex', alignItems: 'center' }}>
-        <div style={{ maxWidth: '600px' }}>
+        <div className="hero-content" style={{ maxWidth: '600px' }}>
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -88,7 +88,7 @@ function Home() {
       {/* Developer Team Section */}
       <section style={{ padding: 'var(--section-padding-large)', position: 'relative', zIndex: 1, marginTop: '-60px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'var(--h2-font-size)', fontWeight: 800, textAlign: 'center', marginBottom: '4rem', color: 'var(--text-main)' }}>Meet The Developers</h2>
+          <h2 style={{ fontSize: 'var(--h2-font-size)', fontWeight: 800, textAlign: 'center', marginBottom: '4rem', color: 'var(--primary)', textTransform: 'uppercase' }}>Behind The Build</h2>
           
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3rem', justifyContent: 'center' }}>
             

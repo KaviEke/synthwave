@@ -221,6 +221,10 @@ input:focus {
     display: flex !important;
   }
 
+  .hero-content {
+    margin-top: -12vh;
+  }
+
   /* Force vertical stacking on mobile */
   .responsive-flex-row-to-col {
     flex-direction: column !important;
