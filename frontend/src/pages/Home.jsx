@@ -52,7 +52,7 @@ function Home() {
             </Link>
             {!user && (
               <Link to="/login" style={{ textDecoration: 'none' }}>
-                <button className="btn-secondary" style={{ padding: '1rem 2.5rem', fontSize: '1.1rem', textTransform: 'uppercase' }}>
+                <button className="btn-primary" style={{ padding: '1rem 2.5rem', fontSize: '1.1rem', textTransform: 'uppercase' }}>
                   Sign In
                 </button>
               </Link>
@@ -72,7 +72,7 @@ function Home() {
                   key={idx}
                   whileHover={{ y: -5, scale: 1.05 }} 
                   className="glass-panel"
-                  style={{ width: '120px', padding: '15px 10px', textAlign: 'center', cursor: 'pointer', background: 'white' }}
+                  style={{ width: '120px', padding: '15px 10px', textAlign: 'center', cursor: 'pointer', background: 'transparent', border: '1px solid var(--primary)' }}
                 >
                   <p style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{inst}</p>
                 </motion.div>

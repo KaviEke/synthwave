@@ -200,16 +200,17 @@ export default function ProductShowcase3D() {
             style={{
               fontSize: 'var(--h2-font-size)',
               fontWeight: 800,
-              color: 'var(--text-main)',
+              color: 'var(--primary)',
               marginBottom: '1rem',
+              textTransform: 'uppercase',
             }}
           >
-            Our Product
+            Experience The Build
           </h2>
           <p
             style={{
               fontSize: '1.15rem',
-              color: 'var(--text-muted)',
+              color: 'white',
               maxWidth: '600px',
               margin: '0 auto',
               lineHeight: 1.7,
@@ -333,32 +334,19 @@ export default function ProductShowcase3D() {
             margin: '3rem auto 0',
           }}
         >
-          {[
-            {
-              icon: '🎹',
-              title: 'Smart Piano Controller',
-              desc: 'IoT-enabled keys with tactile feedback and real-time MIDI synthesis.',
-            },
-            {
-              icon: '🎻',
-              title: 'Gyro Bow Sensor',
-              desc: 'Tracks meend, vibrato, and velocity on any traditional violin bow.',
-            },
-            {
-              icon: '🥁',
-              title: 'USB Kick & Pads',
-              desc: 'Zero-latency percussion pads with dynamic velocity sensing.',
-            },
-          ].map((item, i) => (
+          {[1, 2, 3].map((item, i) => (
             <div
               key={i}
               className="glass-panel"
               style={{
-                padding: '1.5rem',
+                height: '240px',
+                padding: '1rem',
                 textAlign: 'center',
                 background: 'rgba(255, 255, 255, 0.05)',
                 transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                 cursor: 'default',
+                position: 'relative',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-6px)';
@@ -369,13 +357,17 @@ export default function ProductShowcase3D() {
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{item.icon}</div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-main)' }}>
-                {item.title}
-              </h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                {item.desc}
-              </p>
+              <Canvas
+                camera={{ position: [0, 1.5, 4], fov: 45 }}
+                style={{ width: '100%', height: '100%' }}
+              >
+                <ambientLight intensity={0.6} color="#e0e8f0" />
+                <directionalLight position={[5, 8, 5]} intensity={1.5} color="#fff5e6" />
+                <Suspense fallback={null}>
+                  <Model url="/SynthWave.glb" />
+                </Suspense>
+                <OrbitControls enablePan={false} enableZoom={false} autoRotate autoRotateSpeed={2.5} />
+              </Canvas>
             </div>
           ))}
         </div>
