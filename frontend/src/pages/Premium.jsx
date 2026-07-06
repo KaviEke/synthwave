@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import ParallaxBackground from '../components/ParallaxBackground';
+import ParticleCursor from '../components/ParticleCursor';
 
 function Premium() {
   return (
     <div style={{ flex: 1, padding: '4rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-      <ParallaxBackground imageSrc="/images/pop2.png" opacity={0.25} blendMode="screen" />
+      <ParticleCursor />
       
       <motion.div 
         style={{ width: '100%', maxWidth: '1000px' }}

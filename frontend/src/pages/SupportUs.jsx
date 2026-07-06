@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import ParallaxBackground from '../components/ParallaxBackground';
+import ParticleCursor from '../components/ParticleCursor';
 
 function SupportUs() {
   const [email, setEmail] = useState('');
@@ -18,7 +18,7 @@ function SupportUs() {
 
   return (
     <div style={{ flex: 1, padding: '4rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-      <ParallaxBackground imageSrc="/images/pop1.png" opacity={0.3} blendMode="screen" />
+      <ParticleCursor />
       
       <motion.div 
         style={{ width: '100%', maxWidth: '600px', padding: '3rem', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', zIndex: 1, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
@@ -26,7 +26,7 @@ function SupportUs() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--primary)', textAlign: 'center', fontWeight: 'bold' }}>
           Support Us
         </h1>
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>
@@ -62,7 +62,7 @@ function SupportUs() {
               style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', width: '100%', color: 'white', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
             />
           </div>
-          <button type="submit" className="btn-primary" style={{marginTop: '1rem', background: 'linear-gradient(90deg, #10b981, #3b82f6)', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '1.1rem', fontWeight: 'bold'}}>
+          <button type="submit" className="btn-primary" style={{marginTop: '1rem', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '1.1rem', fontWeight: 'bold'}}>
             Send Feedback
           </button>
         </form>

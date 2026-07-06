@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import ParallaxBackground from '../components/ParallaxBackground';
+import ParticleCursor from '../components/ParticleCursor';
 
 function Discover() {
   return (
     <div style={{ flex: 1, padding: '4rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-      <ParallaxBackground imageSrc="/images/hero_music_note.png" opacity={0.4} blendMode="screen" />
+      <ParticleCursor />
       
       <motion.div 
         style={{ width: '100%', maxWidth: '900px', padding: '3rem 4rem', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', zIndex: 1, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
@@ -12,7 +12,7 @@ function Discover() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 style={{ fontSize: '3rem', marginBottom: '2rem', background: 'linear-gradient(45deg, #ec4899, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textAlign: 'center', fontWeight: '900' }}>
+        <h1 style={{ fontSize: '3rem', marginBottom: '2rem', color: 'var(--primary)', textAlign: 'center', fontWeight: '900' }}>
           Discover Our Project
         </h1>
 

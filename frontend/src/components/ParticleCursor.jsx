@@ -14,9 +14,9 @@ const ParticleCursor = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    // Track mouse
-    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    let currentPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    // Track mouse - align right on load
+    let mouse = { x: window.innerWidth * 0.75, y: window.innerHeight / 2 };
+    let currentPos = { x: window.innerWidth * 0.75, y: window.innerHeight / 2 };
     
     const handleMouseMove = (e) => {
       mouse.x = e.clientX;
@@ -114,7 +114,7 @@ const ParticleCursor = () => {
       const cosT = Math.cos(tilt);
       const sinT = Math.sin(tilt);
 
-      const baseRadius = 130 + (smoothedState * 70);
+      const baseRadius = 180 + (smoothedState * 70);
       const fluidity = smoothedState; 
 
       const scrollThreshold = 150;
