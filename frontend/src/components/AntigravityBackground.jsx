@@ -50,7 +50,7 @@ const AntigravityBackground = () => {
       offscreenCanvases[note] = offCanvas;
     });
 
-    const numParticles = 800; // Dense
+    const numParticles = 200; // Less dense
     const particles = [];
 
     // Initialize particles uniformly
@@ -73,20 +73,6 @@ const AntigravityBackground = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       particles.forEach((p) => {
-        // Attraction to mouse (Density follows cursor)
-        if (mouse.active) {
-            let dx = mouse.x - p.x;
-            let dy = mouse.y - p.y;
-            let dist = Math.sqrt(dx * dx + dy * dy);
-            
-            // If near mouse, slowly drift towards it to cluster / become dense along the mouse
-            if (dist < 400) { // Large radius
-                // Gentle pull towards cursor
-                p.x += dx * 0.015;
-                p.y += dy * 0.015;
-            }
-        }
-
         // Move freely in 2D space
         p.x += p.vx;
         p.y += p.vy;
