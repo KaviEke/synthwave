@@ -14,12 +14,19 @@ const AntigravityBackground = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    let currentPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2, active: false };
+    let mouseTimeout;
 
     const handleMouseMove = (e) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
+      mouse.active = true;
+      
+      // Stop dense spawning shortly after mouse stops moving
+      clearTimeout(mouseTimeout);
+      mouseTimeout = setTimeout(() => {
+        mouse.active = false;
+      }, 150);
     };
     window.addEventListener('mousemove', handleMouseMove);
 
@@ -42,7 +49,7 @@ const AntigravityBackground = () => {
       offscreenCanvases[note] = offCanvas;
     });
 
-    const numParticles = 400; // Adjust for density
+    const numParticles = 1200; // Massively increased density
     const particles = [];
     const focalLength = 400;
     const maxDepth = 1500;
@@ -50,9 +57,9 @@ const AntigravityBackground = () => {
 
     for (let i = 0; i < numParticles; i++) {
       particles.push({
-        x: (Math.random() - 0.5) * 3500, // Spread width
-        y: (Math.random() - 0.5) * 3500, // Spread height
-        z: Math.random() * maxDepth,     // Depth distribution
+        x: (Math.random() - 0.5) * 3500, 
+        y: (Math.random() - 0.5) * 3500, 
+        z: Math.random() * maxDepth,     
         size: Math.random() * 1.5 + 0.5,
         noteChar: musicNotes[Math.floor(Math.random() * musicNotes.length)],
         rot: Math.random() * Math.PI * 2,
@@ -65,9 +72,9 @@ const AntigravityBackground = () => {
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Smoothly track mouse for the vanishing point (parallax)
-      currentPos.x += (mouse.x - currentPos.x) * 0.08;
-      currentPos.y += (mouse.y - currentPos.y) * 0.08;
+      // Fixed center vanishing point (stops the whole site from moving with cursor)
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
 
       particles.forEach((p) => {
         // Move particle towards camera (radiating outward effect)
@@ -77,14 +84,28 @@ const AntigravityBackground = () => {
         // Reset particle if it passes the camera
         if (p.z <= 10) {
           p.z = maxDepth;
-          p.x = (Math.random() - 0.5) * 3500;
-          p.y = (Math.random() - 0.5) * 3500;
+          
+          // Dense along cursor behavior
+          // If mouse is moving, spawn a high percentage of new notes right where the mouse is pointing
+          if (mouse.active && Math.random() > 0.25) {
+            // Calculate where the mouse is in 3D space at maxDepth
+            const worldMouseX = (mouse.x - centerX) * (maxDepth / focalLength);
+            const worldMouseY = (mouse.y - centerY) * (maxDepth / focalLength);
+            
+            // Spawn tightly clustered around the mouse direction
+            p.x = worldMouseX + (Math.random() - 0.5) * 500;
+            p.y = worldMouseY + (Math.random() - 0.5) * 500;
+          } else {
+            // Normal wide uniform spawn
+            p.x = (Math.random() - 0.5) * 3500;
+            p.y = (Math.random() - 0.5) * 3500;
+          }
         }
 
         // 3D to 2D projection
         const scale = focalLength / p.z;
-        const x2d = currentPos.x + (p.x * scale);
-        const y2d = currentPos.y + (p.y * scale);
+        const x2d = centerX + (p.x * scale);
+        const y2d = centerY + (p.y * scale);
 
         // Opacity fading
         let opacity = 1;
@@ -124,6 +145,7 @@ const AntigravityBackground = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
+      clearTimeout(mouseTimeout);
       cancelAnimationFrame(animationId);
     };
   }, []);
