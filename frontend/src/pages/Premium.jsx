@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import ScatteredNotes from '../components/ScatteredNotes';
+import AntigravityBackground from '../components/AntigravityBackground';
 
 function Premium() {
   return (
     <div style={{ flex: 1, padding: '4rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-      <ScatteredNotes />
+      <AntigravityBackground />
       
       <motion.div 
         style={{ width: '100%', maxWidth: '1000px' }}
