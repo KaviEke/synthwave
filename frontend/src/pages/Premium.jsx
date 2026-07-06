@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import ParticleCursor from '../components/ParticleCursor';
+import ScatteredNotes from '../components/ScatteredNotes';
 
 function Premium() {
   return (
     <div style={{ flex: 1, padding: '4rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-      <ParticleCursor />
+      <ScatteredNotes />
       
       <motion.div 
         style={{ width: '100%', maxWidth: '1000px' }}
