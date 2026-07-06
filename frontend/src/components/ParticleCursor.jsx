@@ -142,7 +142,7 @@ const ParticleCursor = () => {
         let finalZ = tz * currentRadius;
 
         finalX += p.scatterDirX * p.currentScatterProgress * 30;
-        finalY += p.scatterDirY * p.currentScatterProgress * 30;
+        finalY += p.scatterDirY * p.currentScatterProgress * 30 - (p.currentScatterProgress * 150);
         finalZ += p.scatterDirZ * p.currentScatterProgress * 30;
 
         const focalLength = 500;
@@ -156,7 +156,7 @@ const ParticleCursor = () => {
         const y2d = currentPos.y + finalY * scale;
 
         let baseAlpha = Math.max(0.1, Math.min(0.8, scale - 0.2));
-        baseAlpha *= (1.0 - p.currentScatterProgress); 
+        baseAlpha *= Math.max(0.15, 1.0 - p.currentScatterProgress); 
 
         // Draw pre-rendered images instead of recalculating fonts
         if (baseAlpha > 0.01) {

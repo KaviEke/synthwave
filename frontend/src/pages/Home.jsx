@@ -86,7 +86,7 @@ function Home() {
       <ProductShowcase3D />
 
       {/* Developer Team Section */}
-      <section style={{ padding: 'var(--section-padding-large)', position: 'relative', zIndex: 1 }}>
+      <section style={{ padding: 'var(--section-padding-large)', position: 'relative', zIndex: 1, marginTop: '-60px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <h2 style={{ fontSize: 'var(--h2-font-size)', fontWeight: 800, textAlign: 'center', marginBottom: '4rem', color: 'var(--text-main)' }}>Meet The Developers</h2>
           
