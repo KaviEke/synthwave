@@ -1,5 +1,5 @@
-import React, { Suspense, useRef, useState, useEffect, useCallback } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { Suspense, useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -8,12 +8,60 @@ function easeOutCubic(t) {
   return 1 - Math.pow(1 - t, 3);
 }
 
-/* ─── Scroll-animated Model ─── */
-function ScrollModel({ url, scrollProgress, onLoaded }) {
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+/* ─── Responsive breakpoints helper ─── */
+function getResponsiveConfig(width) {
+  if (width < 480) {
+    // Phone
+    return {
+      modelScale: 0.45,
+      startPos: [2.5, 3, 0],
+      endPos: [-0.3, 0, 0],
+      cameraPos: [0, 0.3, 6],
+      fov: 40,
+    };
+  } else if (width < 768) {
+    // Large phone / small tablet
+    return {
+      modelScale: 0.55,
+      startPos: [3, 3, 0],
+      endPos: [-0.8, 0, 0],
+      cameraPos: [0, 0.3, 6],
+      fov: 38,
+    };
+  } else if (width < 1024) {
+    // Tablet
+    return {
+      modelScale: 0.6,
+      startPos: [3.5, 3.5, -2],
+      endPos: [-1.0, 0, 0],
+      cameraPos: [0, 0.4, 5.5],
+      fov: 36,
+    };
+  } else {
+    // Desktop
+    return {
+      modelScale: 0.65,
+      startPos: [4, 4, -3],
+      endPos: [-1.5, 0, 0],
+      cameraPos: [0, 0.4, 5.5],
+      fov: 36,
+    };
+  }
+}
+
+/* ─── Interactive Model with entrance animation + mouse rotation ─── */
+function InteractiveModel({ url, scrollProgress, mouseRotation, onLoaded, responsiveConfig }) {
   const { scene } = useGLTF(url);
   const groupRef = useRef();
   const baseScale = useRef(1);
   const ready = useRef(false);
+
+  // Smooth mouse rotation with lerp
+  const currentMouseRot = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!scene) return;
@@ -45,26 +93,49 @@ function ScrollModel({ url, scrollProgress, onLoaded }) {
     if (!groupRef.current || !ready.current) return;
 
     const p = scrollProgress.current;
-    const time = state.clock.elapsedTime;
+    const config = responsiveConfig.current;
 
-    // Scale morph: 0 → 1
+    // ── Entrance animation progress (0→1 based on scroll) ──
+    const entranceT = Math.min(p * 2.5, 1);
+    const eased = easeInOutCubic(entranceT);
+
+    // ── Position: top-right → middle-left ──
+    const startPos = config.startPos;
+    const endPos = config.endPos;
+    const x = THREE.MathUtils.lerp(startPos[0], endPos[0], eased);
+    const y = THREE.MathUtils.lerp(startPos[1], endPos[1], eased);
+    const z = THREE.MathUtils.lerp(startPos[2], endPos[2], eased);
+
+    // ── Scale: start small, morph to target size ──
     const scaleT = Math.min(p * 2.5, 1);
-    const s = easeOutCubic(scaleT) * baseScale.current;
+    const targetScale = config.modelScale;
+    const s = THREE.MathUtils.lerp(0.1, targetScale, easeOutCubic(scaleT)) * baseScale.current;
     groupRef.current.scale.setScalar(s);
 
-    // Slide in from behind, positioning model on the right
-    const posT = Math.min(p * 2.0, 1);
-    groupRef.current.position.z = THREE.MathUtils.lerp(-5, 0, easeOutCubic(posT));
-    groupRef.current.position.x = THREE.MathUtils.lerp(3, 1.5, easeOutCubic(posT)); // Animate in from further right to resting position on the right
+    // ── Entrance rotation (spin in during entrance) ──
+    const rotT = Math.min(p * 2.0, 1);
+    const entranceRotY = THREE.MathUtils.lerp(Math.PI * 0.5, 0, easeOutCubic(rotT));
+    const entranceRotX = THREE.MathUtils.lerp(-0.3, 0, easeOutCubic(rotT));
 
-    // Entrance spin + idle rotation
-    const rotT = Math.min(p * 1.6, 1);
-    const entrance = THREE.MathUtils.lerp(Math.PI, 0, easeOutCubic(rotT));
-    const idle = p > 0.4 ? time * 0.15 : 0;
-    groupRef.current.rotation.y = entrance + idle;
+    // ── Smooth mouse rotation (only after entrance completes) ──
+    const mouseInfluence = Math.min(Math.max((p - 0.3) / 0.2, 0), 1); // fade in mouse control
+    const targetMouseX = mouseRotation.current.x * mouseInfluence;
+    const targetMouseY = mouseRotation.current.y * mouseInfluence;
 
-    // Gentle float
-    groupRef.current.position.y = Math.sin(time * 0.6) * 0.04;
+    currentMouseRot.current.x += (targetMouseX - currentMouseRot.current.x) * 0.08;
+    currentMouseRot.current.y += (targetMouseY - currentMouseRot.current.y) * 0.08;
+
+    // ── Gentle floating (only after settled) ──
+    const time = state.clock.elapsedTime;
+    const floatAmount = Math.min(p * 2, 1);
+    const floatY = Math.sin(time * 0.5) * 0.03 * floatAmount;
+
+    groupRef.current.position.set(x, y + floatY, z);
+    groupRef.current.rotation.set(
+      entranceRotX + currentMouseRot.current.x,
+      entranceRotY + currentMouseRot.current.y,
+      0
+    );
   });
 
   return (
@@ -86,16 +157,34 @@ function Lights() {
   );
 }
 
+/* ─── Camera updater for responsive ─── */
+function CameraUpdater({ responsiveConfig }) {
+  const { camera } = useThree();
+
+  useFrame(() => {
+    const config = responsiveConfig.current;
+    camera.position.lerp(new THREE.Vector3(...config.cameraPos), 0.05);
+    camera.fov = THREE.MathUtils.lerp(camera.fov, config.fov, 0.05);
+    camera.updateProjectionMatrix();
+  });
+
+  return null;
+}
+
 /* ─── Main Component ─── */
 export default function ProductShowcase3D() {
   const [isLoading, setIsLoading] = useState(true);
   const sectionRef = useRef(null);
   const scrollProgress = useRef(0);
+  const mouseRotation = useRef({ x: 0, y: 0 });
+  const responsiveConfig = useRef(getResponsiveConfig(window.innerWidth));
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const handleLoaded = useCallback(() => {
     setTimeout(() => setIsLoading(false), 300);
   }, []);
 
+  // Scroll tracking
   useEffect(() => {
     const onScroll = () => {
       if (!sectionRef.current) return;
@@ -109,16 +198,70 @@ export default function ProductShowcase3D() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Mouse tracking for rotation (desktop) + touch (mobile)
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!sectionRef.current) return;
+      const rect = sectionRef.current.getBoundingClientRect();
+      // Only respond when mouse is within the section
+      if (e.clientY < rect.top || e.clientY > rect.bottom) return;
+
+      const nx = (e.clientX / window.innerWidth - 0.5) * 2; // -1 to 1
+      const ny = (e.clientY / window.innerHeight - 0.5) * 2;
+
+      mouseRotation.current = {
+        x: -ny * 0.4,  // vertical mouse → X rotation
+        y: nx * 0.6,   // horizontal mouse → Y rotation
+      };
+    };
+
+    // Touch support
+    const onTouchMove = (e) => {
+      if (!sectionRef.current || !e.touches[0]) return;
+      const rect = sectionRef.current.getBoundingClientRect();
+      const touch = e.touches[0];
+      if (touch.clientY < rect.top || touch.clientY > rect.bottom) return;
+
+      const nx = (touch.clientX / window.innerWidth - 0.5) * 2;
+      const ny = (touch.clientY / window.innerHeight - 0.5) * 2;
+
+      mouseRotation.current = {
+        x: -ny * 0.4,
+        y: nx * 0.6,
+      };
+    };
+
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
+
+  // Resize tracking
+  useEffect(() => {
+    const onResize = () => {
+      const w = window.innerWidth;
+      setWindowWidth(w);
+      responsiveConfig.current = getResponsiveConfig(w);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+
   return (
     <section
       ref={sectionRef}
       style={{
         position: 'relative',
         zIndex: 1,
-        minHeight: '80vh',
+        minHeight: '85vh',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
         overflow: 'hidden',
       }}
     >
@@ -134,8 +277,8 @@ export default function ProductShowcase3D() {
         transition: 'opacity 0.8s ease',
       }}>
         <Canvas
-          camera={{ position: [0, 0.5, 5.5], fov: 36, near: 0.1, far: 50 }}
-          style={{ width: '100%', height: '100%' }}
+          camera={{ position: [0, 0.4, 5.5], fov: 36, near: 0.1, far: 50 }}
+          style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
           gl={{
             antialias: true,
             alpha: true,
@@ -144,36 +287,34 @@ export default function ProductShowcase3D() {
           }}
           onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
         >
+          <CameraUpdater responsiveConfig={responsiveConfig} />
           <Lights />
           <Suspense fallback={null}>
-            <ScrollModel
+            <InteractiveModel
               url="/Synth+Wave+Left+Hand.glb"
               scrollProgress={scrollProgress}
+              mouseRotation={mouseRotation}
               onLoaded={handleLoaded}
+              responsiveConfig={responsiveConfig}
             />
           </Suspense>
         </Canvas>
       </div>
 
-      {/* ── Foreground content on top of the 3D model ── */}
+      {/* ── Foreground content: left-aligned ── */}
       <div style={{
         position: 'relative',
         zIndex: 1,
-        maxWidth: '1000px',
         width: '100%',
-        padding: '4rem 2rem',
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        margin: '0 auto',
-        gap: '2rem',
+        maxWidth: '1400px',
+        padding: isMobile ? '3rem 1.5rem' : isTablet ? '4rem 2.5rem' : '4rem 4rem',
+        pointerEvents: 'none',
       }}>
-        {/* Left: text content */}
+        {/* Left: text content - aligned to left border */}
         <div style={{
-          flex: '1 1 360px',
-          maxWidth: '480px',
+          maxWidth: isMobile ? '100%' : isTablet ? '380px' : '460px',
           textAlign: 'left',
+          pointerEvents: 'auto',
         }}>
           <p style={{
             fontSize: '0.8rem',
@@ -186,7 +327,7 @@ export default function ProductShowcase3D() {
             Introducing
           </p>
           <h2 style={{
-            fontSize: 'clamp(2rem, 4vw, 3rem)',
+            fontSize: isMobile ? '1.8rem' : isTablet ? '2.2rem' : 'clamp(2rem, 4vw, 3rem)',
             fontWeight: 800,
             color: 'var(--text-main)',
             lineHeight: 1.15,
@@ -195,7 +336,7 @@ export default function ProductShowcase3D() {
             Synth Wave<br />Controller
           </h2>
           <p style={{
-            fontSize: '1rem',
+            fontSize: isMobile ? '0.9rem' : '1rem',
             color: 'var(--text-muted)',
             lineHeight: 1.75,
             marginBottom: '1.25rem',
@@ -205,7 +346,7 @@ export default function ProductShowcase3D() {
             and gyroscopic sensors to capture every nuance of your movement.
           </p>
           <p style={{
-            fontSize: '0.95rem',
+            fontSize: isMobile ? '0.85rem' : '0.95rem',
             color: 'var(--text-muted)',
             lineHeight: 1.75,
             marginBottom: '1.5rem',
@@ -231,14 +372,21 @@ export default function ProductShowcase3D() {
               </span>
             ))}
           </div>
-        </div>
 
-        {/* Right: empty spacer so the 3D model shows through */}
-        <div style={{
-          flex: '1 1 340px',
-          maxWidth: '400px',
-          minHeight: '320px',
-        }} />
+          {/* Mouse interaction hint */}
+          <p style={{
+            marginTop: '1.5rem',
+            fontSize: '0.75rem',
+            color: 'var(--text-muted)',
+            opacity: 0.6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}>
+            <span style={{ fontSize: '1rem' }}>↕↔</span>
+            {isMobile ? 'Touch & drag to rotate the 3D model' : 'Move your mouse to rotate the 3D model'}
+          </p>
+        </div>
       </div>
     </section>
   );
