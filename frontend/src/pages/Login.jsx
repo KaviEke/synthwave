@@ -42,7 +42,7 @@ function Login() {
         style={{ display: 'flex', flexWrap: 'wrap', maxWidth: '900px', width: '100%', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(14, 165, 233, 0.2)', border: '2px solid var(--primary)', backgroundColor: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)', zIndex: 1 }}
       >
         {/* Left Branding Pane */}
-        <div style={{ flex: '1 1 350px', background: 'linear-gradient(135deg, rgba(14,165,233,0.3), rgba(0,0,0,0.1))', padding: '4rem 3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'white', textAlign: 'center' }}>
+        <div style={{ flex: '1 1 350px', background: 'linear-gradient(135deg, rgba(0, 170, 255, 0.6), rgba(0, 0, 0, 0.1))', padding: '4rem 3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'white', textAlign: 'center' }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', letterSpacing: '2px' }}>SYNTRONICS</h1>
           <p style={{ fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.6 }}>Access your digital instrument control center and dive back into the music.</p>
         </div>
