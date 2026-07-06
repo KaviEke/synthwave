@@ -252,12 +252,12 @@ export default function ProductShowcase3D() {
             <Suspense fallback={null}>
               <Model
                 url="/Synth+Wave+Left+Hand.glb"
-                position={[-2.0, 0, 0]}
+                position={[-1.3, 0, 0]}
                 onLoaded={handleLoaded}
               />
               <Model
                 url="/SynthWave.glb"
-                position={[2.0, 0, 0]}
+                position={[1.3, 0, 0]}
                 onLoaded={handleLoaded}
               />
               <ContactShadows

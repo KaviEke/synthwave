@@ -36,7 +36,7 @@ const AntigravityBackground = () => {
     offCtx.textBaseline = 'middle';
     offCtx.fillText('♪', size / 2, size / 2);
 
-    const numParticles = 2000;
+    const numParticles = 3500;
     const particles = [];
 
     // Distribute particles across a very large 3D volume
@@ -51,8 +51,8 @@ const AntigravityBackground = () => {
         baseZ: r * Math.cos(phi),
         // Size varies between 4 and 12 (scaled later based on depth)
         size: Math.random() * 8 + 4, 
-        // Opacity varies between 15% and 70%
-        opacity: Math.random() * 0.55 + 0.15,
+        // Opacity varies between 15% and 85% for slight emphasis
+        opacity: Math.random() * 0.70 + 0.15,
         rotSpeedX: (Math.random() - 0.5) * 0.002,
         rotSpeedY: (Math.random() - 0.5) * 0.002,
       });
@@ -66,12 +66,12 @@ const AntigravityBackground = () => {
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Subtle parallax effect reacting to mouse movement
+      // Subtle parallax effect reacting to mouse movement (reduced so it doesn't move the site heavily)
       currentPos.x += (mouse.x - currentPos.x) * 0.05;
       currentPos.y += (mouse.y - currentPos.y) * 0.05;
       
-      const parallaxOffsetX = (currentPos.x - window.innerWidth / 2) * 0.15;
-      const parallaxOffsetY = (currentPos.y - window.innerHeight / 2) * 0.15;
+      const parallaxOffsetX = (currentPos.x - window.innerWidth / 2) * 0.03;
+      const parallaxOffsetY = (currentPos.y - window.innerHeight / 2) * 0.03;
 
       time += 0.005;
       rotationX += 0.001;
