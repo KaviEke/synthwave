@@ -39,10 +39,10 @@ function Register() {
 
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative', overflow: 'hidden' }}>
-      <ParticleCursor forceScatter={true} />
+      <ParticleCursor />
 
       <motion.div 
-        style={{ padding: '3rem 2.5rem', width: '100%', maxWidth: '450px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', zIndex: 1, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+        style={{ padding: '3rem 2.5rem', width: '100%', maxWidth: '450px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(24px)', border: '2px solid var(--primary)', borderRadius: '24px', zIndex: 1, boxShadow: '0 25px 50px rgba(14, 165, 233, 0.15)' }}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
