@@ -1,47 +1,41 @@
 import React, { Suspense, useRef, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Environment, ContactShadows } from '@react-three/drei';
+import { OrbitControls, useGLTF, Environment, ContactShadows, Clone } from '@react-three/drei';
 import * as THREE from 'three';
 
 /* ─── 3D Model Component ─── */
-function Model({ url, position = [0, 0, 0], onLoaded }) {
+function Model({ url, position = [0, 0, 0], onLoaded, customScale = 1.6 }) {
   const { scene } = useGLTF(url);
-  const modelRef = useRef();
+  const [modelProps, setModelProps] = useState(null);
 
   useEffect(() => {
     if (scene) {
-      // Center the model's pivot point
+      // Calculate original bounds without mutating the shared scene object
       const box = new THREE.Box3().setFromObject(scene);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
 
-      scene.position.sub(center);
-
-      // Scale to fit viewport nicely and prevent overlapping
       const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 1.6 / maxDim;
-      scene.scale.setScalar(scale);
+      const scale = customScale / maxDim;
 
-      // Recompute after scaling
-      const newBox = new THREE.Box3().setFromObject(scene);
-      const newCenter = newBox.getCenter(new THREE.Vector3());
-      scene.position.sub(newCenter);
-
-      // Enable shadows on all meshes
-      scene.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
+      setModelProps({
+        scale: scale,
+        offsetX: -center.x * scale,
+        offsetY: -center.y * scale,
+        offsetZ: -center.z * scale
       });
 
       if (onLoaded) onLoaded();
     }
-  }, [scene, onLoaded]);
+  }, [scene, onLoaded, customScale]);
+
+  if (!modelProps) return null;
 
   return (
     <group position={position}>
-      <primitive ref={modelRef} object={scene} />
+      <group position={[modelProps.offsetX, modelProps.offsetY, modelProps.offsetZ]} scale={modelProps.scale}>
+        <Clone object={scene} castShadow receiveShadow />
+      </group>
     </group>
   );
 }
@@ -364,7 +358,7 @@ export default function ProductShowcase3D() {
                 <ambientLight intensity={0.6} color="#e0e8f0" />
                 <directionalLight position={[5, 8, 5]} intensity={1.5} color="#fff5e6" />
                 <Suspense fallback={null}>
-                  <Model url="/SynthWave.glb" />
+                  <Model url="/SynthWave.glb" customScale={2.6} />
                 </Suspense>
                 <OrbitControls enablePan={false} enableZoom={false} autoRotate autoRotateSpeed={2.5} />
               </Canvas>
