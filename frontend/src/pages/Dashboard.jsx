@@ -6,7 +6,7 @@ import { SocketContext } from '../context/SocketContext';
 // --- Light Theme Colors (matching site CSS variables) ---
 const colors = {
   bg: '#f8fafc',
-  panelBg: 'rgba(255, 255, 255, 0.8)',
+  panelBg: 'rgba(0, 0, 0, 0.8)',
   border: 'rgba(14, 165, 233, 0.2)',
   borderGlow: '0 8px 32px rgba(14, 165, 233, 0.08)',
   cyan: '#0ea5e9',

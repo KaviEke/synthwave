@@ -1,12 +1,12 @@
 :root {
-  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.8);
+  --bg-gradient: linear-gradient(135deg, #000000 0%, #0f172a 100%);
+  --glass-bg: rgba(0, 0, 0, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.15);
   --primary: #0ea5e9;
   --primary-glow: #38bdf8;
   --secondary: #3b82f6;
-  --text-main: #0f172a;
-  --text-muted: #475569;
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
 
   /* Responsive Variables */
   --section-padding: 4rem 6rem;
@@ -30,7 +30,7 @@
 }
 
 body {
-  background-color: #f8fafc;
+  background-color: #000000;
   background-image: var(--bg-gradient);
   background-attachment: fixed;
   color: var(--text-main);
@@ -103,7 +103,7 @@ body {
 input {
   width: 100%;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.8);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
   color: var(--text-main);
@@ -124,7 +124,7 @@ input:focus {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--glass-border);
   box-shadow: 0 4px 20px rgba(0,0,0,0.03);
@@ -162,7 +162,7 @@ input:focus {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  background: white;
+  background: #111111;
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(14, 165, 233, 0.1);
 }
@@ -259,7 +259,7 @@ input:focus {
     top: 100%;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--glass-border);
     padding: 1.5rem;

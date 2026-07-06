@@ -346,7 +346,7 @@ export default function ProductShowcase3D() {
               style={{
                 padding: '1.5rem',
                 textAlign: 'center',
-                background: 'rgba(255, 255, 255, 0.6)',
+                background: 'rgba(255, 255, 255, 0.05)',
                 transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                 cursor: 'default',
               }}
