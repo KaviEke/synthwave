@@ -4,7 +4,7 @@ import { OrbitControls, useGLTF, Environment, ContactShadows } from '@react-thre
 import * as THREE from 'three';
 
 /* ─── 3D Model Component ─── */
-function Model({ url, onLoaded }) {
+function Model({ url, position = [0, 0, 0], onLoaded }) {
   const { scene } = useGLTF(url);
   const modelRef = useRef();
 
@@ -39,7 +39,11 @@ function Model({ url, onLoaded }) {
     }
   }, [scene, onLoaded]);
 
-  return <primitive ref={modelRef} object={scene} />;
+  return (
+    <group position={position}>
+      <primitive ref={modelRef} object={scene} />
+    </group>
+  );
 }
 
 /* ─── Auto-Rotate Controller ─── */
@@ -248,6 +252,12 @@ export default function ProductShowcase3D() {
             <Suspense fallback={null}>
               <Model
                 url="/Synth+Wave+Left+Hand.glb"
+                position={[-1.5, 0, 0]}
+                onLoaded={handleLoaded}
+              />
+              <Model
+                url="/SynthWave.glb"
+                position={[1.5, 0, 0]}
                 onLoaded={handleLoaded}
               />
               <ContactShadows
