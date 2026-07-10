@@ -1,0 +1,15 @@
+[Unit]
+Description=SynthWave Motion Cloud Bridge
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/syntronics/raspberry_pi
+ExecStart=/usr/bin/python3 /home/pi/syntronics/raspberry_pi/cloud_bridge.py
+Restart=always
+RestartSec=5
+EnvironmentFile=/home/pi/syntronics/raspberry_pi/.env
+
+[Install]
+WantedBy=multi-user.target
