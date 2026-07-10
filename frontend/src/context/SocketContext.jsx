@@ -6,8 +6,9 @@ import { AuthContext } from './AuthContext';
 export const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
-  const { user } = useContext(AuthContext);
+  const { token } = useContext(AuthContext);
   const [socket, setSocket] = useState(null);
+  const [lastEvent, setLastEvent] = useState({ name: 'None', time: '--' });
 
   // Hardware State
   const [hardwareState, setHardwareState] = useState({
@@ -32,7 +33,7 @@ export const SocketProvider = ({ children }) => {
   const [legacyDeviceStatus, setLegacyDeviceStatus] = useState({ active: false, deviceId: null });
 
   useEffect(() => {
-    if (!user || !user.token) {
+    if (!token) {
       if (socket) {
         socket.close();
         setSocket(null);
@@ -40,14 +41,53 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
+    console.log("[SOCKET] creating connection", SOCKET_URL);
     const newSocket = io(SOCKET_URL, {
-      transports: ['websocket'],
-      upgrade: false,
-      auth: { token: user.token },
-      reconnection: true
+      auth: {
+        role: "browser",
+        token
+      },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      timeout: 10000
     });
 
     setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log("[SOCKET] connected", newSocket.id);
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error("[SOCKET] connection error", error.message);
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log("[SOCKET] disconnected", reason);
+    });
+
+    newSocket.onAny((eventName, ...args) => {
+      console.log("[SOCKET EVENT]", eventName, args);
+      setLastEvent({ name: eventName, time: new Date().toLocaleTimeString() });
+    });
+
+    newSocket.on('device_snapshot', (data) => {
+       // Currently unhandled by hardwareState logic but listening as requested
+    });
+
+    newSocket.on('sensor_frame', (data) => {
+       // Currently unhandled but listening as requested
+    });
+
+    newSocket.on('session_status', (data) => {
+       // Currently unhandled but listening as requested
+    });
+
+    newSocket.on('command_result', (data) => {
+       // Currently unhandled but listening as requested
+    });
 
     // Hardware status
     newSocket.on('device_status', (data) => {
@@ -113,11 +153,19 @@ export const SocketProvider = ({ children }) => {
     });
 
     return () => {
+      newSocket.off('connect');
+      newSocket.off('connect_error');
+      newSocket.off('disconnect');
+      newSocket.offAny();
+      newSocket.off('device_snapshot');
+      newSocket.off('sensor_frame');
+      newSocket.off('session_status');
+      newSocket.off('command_result');
       newSocket.off('device_status');
       newSocket.off('performance_event');
-      newSocket.close();
+      newSocket.disconnect();
     };
-  }, [user]);
+  }, [token]);
 
   // Command helper
   const sendHardwareCommand = (command, data) => {
@@ -131,7 +179,7 @@ export const SocketProvider = ({ children }) => {
   };
 
   return (
-    <SocketContext.Provider value={{ socket, hardwareState, currentNote, deviceStatus: legacyDeviceStatus, sendHardwareCommand, emitModeChange }}>
+    <SocketContext.Provider value={{ socket, hardwareState, currentNote, deviceStatus: legacyDeviceStatus, sendHardwareCommand, emitModeChange, lastEvent }}>
       {children}
     </SocketContext.Provider>
   );

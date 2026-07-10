@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 import { SocketContext } from '../context/SocketContext';
+import DiagnosticCard from '../components/DiagnosticCard';
 
 // --- Light Theme Colors (matching site CSS variables) ---
 const colors = {
@@ -41,7 +42,7 @@ export default function Dashboard() {
   ]);
   const logContainerRef = useRef(null);
 
-  const piOnline = deviceStatus['raspberry-pi-4b']?.active || false;
+  const piOnline = deviceStatus['raspberry-pi-4b']?.active || deviceStatus['raspberry-pi-simulator']?.active || false;
   const c1Online = deviceStatus['controller-1']?.active || false;
   const c2Online = deviceStatus['controller-2']?.active || false;
 
@@ -131,6 +132,9 @@ export default function Dashboard() {
             </span>
           </div>
         </div>
+
+        {/* DIAGNOSTIC CARD */}
+        <DiagnosticCard />
 
         {/* 2. INSTRUMENT MODE SELECTOR */}
         <section>
