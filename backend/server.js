@@ -155,6 +155,23 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`❌ Device disconnected: ${socket.id}`);
+    if (socket.data.role === 'raspberry_pi' || socket.data.role === 'simulator') {
+      const deviceId = socket.data.deviceId;
+      
+      // Mark the Pi as offline
+      const piOffline = { deviceId: deviceId, active: false };
+      hardwareStateCache[deviceId] = piOffline;
+      io.to('web-clients').emit('device_status', piOffline);
+      
+      // Mark controllers as offline
+      const c1Offline = { deviceId: 'controller-1', active: false };
+      hardwareStateCache['controller-1'] = c1Offline;
+      io.to('web-clients').emit('device_status', c1Offline);
+
+      const c2Offline = { deviceId: 'controller-2', active: false };
+      hardwareStateCache['controller-2'] = c2Offline;
+      io.to('web-clients').emit('device_status', c2Offline);
+    }
   });
 });
 
