@@ -1,23 +1,30 @@
 import os
 import socketio
-import time
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env relative to this file
+load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
 
 # Initialize Socket.IO client
 sio = socketio.Client()
 
-SOCKET_URL = os.getenv('SOCKET_URL', 'http://localhost:5000')
-PI_DEVICE_TOKEN = os.getenv('PI_DEVICE_TOKEN', 'test-pi-token-123')
+CLOUD_SOCKET_URL = os.getenv('CLOUD_SOCKET_URL', os.getenv('SOCKET_URL', 'http://localhost:5000')).strip()
+PI_DEVICE_TOKEN = os.getenv('PI_DEVICE_TOKEN', '').strip()
+PI_DEVICE_ID = 'raspberry-pi-4b'
+
+if not PI_DEVICE_TOKEN:
+    print("ERROR: PI_DEVICE_TOKEN is missing or empty in .env")
+    sys.exit(1)
 
 @sio.event
 def connect():
-    print(f"Connected to SynthWave Motion Cloud at {SOCKET_URL}")
+    print(f"Connected to SynthWave Motion Cloud at {CLOUD_SOCKET_URL}")
     
     # Send initial connection status
     sio.emit('device_status', {
-        'deviceId': 'raspberry-pi-4b',
+        'deviceId': PI_DEVICE_ID,
         'active': True
     })
     
@@ -46,7 +53,13 @@ def on_hardware_command(data):
 def main():
     print("Starting SynthWave Motion Raspberry Pi Bridge...")
     try:
-        sio.connect(SOCKET_URL, auth={'token': PI_DEVICE_TOKEN})
+        # Use exact authentication contract
+        auth_payload = {
+            'role': 'raspberry_pi',
+            'token': PI_DEVICE_TOKEN,
+            'deviceId': PI_DEVICE_ID
+        }
+        sio.connect(CLOUD_SOCKET_URL, auth=auth_payload)
         print("Waiting for events... Press Ctrl+C to exit")
         sio.wait()
     except Exception as e:

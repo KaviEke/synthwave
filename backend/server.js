@@ -58,17 +58,41 @@ app.get('/health', (req, res) => {
 // Database Connection logging
 console.log('Database configuration loaded.');
 
+const crypto = require('crypto');
+function getSafeTokenHash(tokenStr) {
+  if (!tokenStr) return 'none';
+  return crypto.createHash('sha256').update(String(tokenStr)).digest('hex').substring(0, 12);
+}
+
 // Socket.io Authentication Middleware
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
+  const role = socket.handshake.auth?.role;
+  const deviceId = socket.handshake.auth?.deviceId;
+  
   if (!token) {
     return next(new Error('Authentication error: No token provided'));
   }
 
-  if (process.env.PI_DEVICE_TOKEN && token === process.env.PI_DEVICE_TOKEN) {
-    socket.data.role = 'raspberry_pi';
-    socket.join('hardware-devices');
-    return next();
+  if (role === 'raspberry_pi' || role === 'simulator') {
+    const receivedToken = String(token).trim();
+    const expectedToken = String(process.env.PI_DEVICE_TOKEN || '').trim();
+    
+    if (process.env.AUTH_DEBUG === 'true') {
+      console.log(`[AUTH DIAGNOSTICS] Role: ${role}`);
+      console.log(`[AUTH DIAGNOSTICS] Expected Token Length: ${expectedToken.length}`);
+      console.log(`[AUTH DIAGNOSTICS] Received Token Length: ${receivedToken.length}`);
+      console.log(`[AUTH DIAGNOSTICS] Expected Hash (12 chars): ${getSafeTokenHash(expectedToken)}`);
+      console.log(`[AUTH DIAGNOSTICS] Received Hash (12 chars): ${getSafeTokenHash(receivedToken)}`);
+    }
+
+    if (expectedToken && receivedToken === expectedToken) {
+      socket.data.role = role;
+      socket.data.deviceId = deviceId || 'unknown-device';
+      socket.join('hardware-devices');
+      return next();
+    }
+    return next(new Error('Authentication error: Invalid hardware token'));
   }
 
   try {
