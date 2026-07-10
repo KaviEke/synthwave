@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import axios from 'axios';
 import { API_URL } from '../config';
+
 const InteractiveInstrument = ({ instrument }) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -72,9 +73,11 @@ const InteractiveInstrument = ({ instrument }) => {
 };
 
 function LiveSession() {
-  const { deviceStatus, currentNote } = useContext(SocketContext);
+  const { hardwareState, currentNote } = useContext(SocketContext);
   const { user, token } = useContext(AuthContext);
 
+  const { deviceStatus, activeNotes } = hardwareState;
+  
   // Local session state
   const [sessionActive, setSessionActive] = useState(false);
   const [startTime, setStartTime] = useState(null);
@@ -95,12 +98,14 @@ function LiveSession() {
     if (currentNote) {
       setDisplayInstrument(currentNote.instrument);
       setDisplayNote(currentNote);
-
-      const timer = setTimeout(() => {
-        setDisplayNote(null);
-      }, 1000);
-
-      return () => clearTimeout(timer);
+      
+      // Only timeout for drums since they don't have note_off
+      if (currentNote.instrument === 'drum') {
+        const timer = setTimeout(() => setDisplayNote(null), 1000);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      setDisplayNote(null);
     }
   }, [currentNote, sessionActive]);
 
@@ -145,6 +150,10 @@ function LiveSession() {
     }
   };
 
+  const piActive = deviceStatus['raspberry-pi-4b']?.active;
+  const c1Active = deviceStatus['controller-1']?.active;
+  const c2Active = deviceStatus['controller-2']?.active;
+
   return (
     <div style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
       
@@ -159,19 +168,26 @@ function LiveSession() {
 
       {/* Device Status Bar */}
       <motion.div 
-        style={{ width: '100%', maxWidth: '800px', padding: '1.5rem 2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', backdropFilter: 'blur(20px)', zIndex: 1 }}
+        style={{ width: '100%', maxWidth: '800px', padding: '1.5rem 2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', backdropFilter: 'blur(20px)', zIndex: 1, flexWrap: 'wrap', gap: '1rem' }}
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ 
-            width: '12px', height: '12px', borderRadius: '50%', 
-            background: deviceStatus?.active ? '#10b981' : '#ef4444',
-            boxShadow: `0 0 10px ${deviceStatus?.active ? '#10b981' : '#ef4444'}`
-          }} />
-          <span style={{ fontWeight: 500 }}>
-            Device: {deviceStatus?.active ? `Connected (${deviceStatus?.deviceId || 'Hardware'})` : 'Waiting for connection...'}
-          </span>
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+           {/* Pi Status */}
+           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: piActive ? '#10b981' : '#ef4444', boxShadow: `0 0 8px ${piActive ? '#10b981' : '#ef4444'}` }} />
+              <span style={{ fontSize: '0.9rem', color: piActive ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>Pi Bridge</span>
+           </div>
+           {/* C1 Status */}
+           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c1Active ? '#0ea5e9' : '#475569', boxShadow: c1Active ? `0 0 8px #0ea5e9` : 'none' }} />
+              <span style={{ fontSize: '0.9rem', color: c1Active ? '#0ea5e9' : '#94a3b8', fontWeight: 'bold' }}>Controller 1</span>
+           </div>
+           {/* C2 Status */}
+           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c2Active ? '#8b5cf6' : '#475569', boxShadow: c2Active ? `0 0 8px #8b5cf6` : 'none' }} />
+              <span style={{ fontSize: '0.9rem', color: c2Active ? '#8b5cf6' : '#94a3b8', fontWeight: 'bold' }}>Controller 2</span>
+           </div>
         </div>
 
         <button 

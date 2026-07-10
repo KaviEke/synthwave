@@ -30,7 +30,8 @@ const panelStyle = {
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
-  const { emitModeChange, deviceStatus, currentNote } = useContext(SocketContext);
+  const { sendHardwareCommand, hardwareState, currentNote } = useContext(SocketContext);
+  const { deviceStatus } = hardwareState;
 
   // --- State ---
   const [activeMode, setActiveMode] = useState('piano');
@@ -40,7 +41,9 @@ export default function Dashboard() {
   ]);
   const logContainerRef = useRef(null);
 
-  const isOnline = deviceStatus?.active || false;
+  const piOnline = deviceStatus['raspberry-pi-4b']?.active || false;
+  const c1Online = deviceStatus['controller-1']?.active || false;
+  const c2Online = deviceStatus['controller-2']?.active || false;
 
   // --- Helpers ---
   const addLog = (type, msg) => {
@@ -57,42 +60,40 @@ export default function Dashboard() {
   const handleModeChange = (mode) => {
     setActiveMode(mode);
     addLog('mode', `Mode changed to ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
-    // SOCKET EMIT PLACEHOLDER: socket.emit("set_mode", { mode });
-    if (emitModeChange) {
-      const modeMap = { piano: 0, violin: 1, drum: 2, vocal: 3 };
-      emitModeChange(modeMap[mode]);
+    if (sendHardwareCommand) {
+      sendHardwareCommand('set_mode', { mode });
     }
   };
 
   const handleVolumeChange = (channel, value) => {
     setVolumes(prev => ({ ...prev, [channel]: value }));
-    // SOCKET EMIT PLACEHOLDER: socket.emit("set_volume", { channel, value });
+    if (sendHardwareCommand) sendHardwareCommand('set_volume', { channel, value });
   };
 
   const handleMuteAll = () => {
     setVolumes({ master: 0, piano: 0, violin: 0, drum: 0 });
     addLog('audio', 'All channels muted.');
-    // SOCKET EMIT PLACEHOLDER: socket.emit("mute_all");
+    if (sendHardwareCommand) sendHardwareCommand('mute_all', {});
   };
 
   const handleStopAllSounds = () => {
     addLog('danger', 'EMERGENCY: All sounds stopped.');
-    // SOCKET EMIT PLACEHOLDER: socket.emit("stop_all_sounds");
+    if (sendHardwareCommand) sendHardwareCommand('stop_all_sounds', {});
   };
 
   const handleDrumTest = (sound) => {
     addLog('action', `Drum pad triggered: ${sound}`);
-    // SOCKET EMIT PLACEHOLDER: socket.emit("play_drum", { sound });
+    if (sendHardwareCommand) sendHardwareCommand('play_drum', { sound });
   };
 
   const handleReconnect = () => {
     addLog('system', 'Attempting device reconnection...');
-    // SOCKET EMIT PLACEHOLDER: socket.emit("reconnect_devices");
+    if (sendHardwareCommand) sendHardwareCommand('reconnect_devices', {});
   };
 
   const handleReset = () => {
     addLog('danger', 'Resetting controllers...');
-    // SOCKET EMIT PLACEHOLDER: socket.emit("reset_controllers");
+    if (sendHardwareCommand) sendHardwareCommand('reset_controllers', {});
   };
 
   const clearLog = () => setActivityLog([]);
@@ -119,14 +120,14 @@ export default function Dashboard() {
               Control and monitor your Synthwave performance in real time.
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', background: isOnline ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.08)', padding: '0.6rem 1.2rem', borderRadius: '50px', border: `1px solid ${isOnline ? colors.success : colors.danger}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', background: piOnline ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.08)', padding: '0.6rem 1.2rem', borderRadius: '50px', border: `1px solid ${piOnline ? colors.success : colors.danger}` }}>
             <motion.div
               animate={{ opacity: [1, 0.4, 1] }}
               transition={{ repeat: Infinity, duration: 1.5 }}
-              style={{ width: '12px', height: '12px', borderRadius: '50%', background: isOnline ? colors.success : colors.danger, boxShadow: `0 0 8px ${isOnline ? colors.success : colors.danger}` }}
+              style={{ width: '12px', height: '12px', borderRadius: '50%', background: piOnline ? colors.success : colors.danger, boxShadow: `0 0 8px ${piOnline ? colors.success : colors.danger}` }}
             />
-            <span style={{ color: isOnline ? colors.success : colors.danger, fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', fontSize: '0.85rem' }}>
-              {isOnline ? 'System Online' : 'System Offline'}
+            <span style={{ color: piOnline ? colors.success : colors.danger, fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+              {piOnline ? 'System Online (Pi)' : 'System Offline (Pi)'}
             </span>
           </div>
         </div>
@@ -183,19 +184,19 @@ export default function Dashboard() {
                 <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.5rem', color: colors.textMain }}>Controller 1</h3>
                 <span style={{ color: colors.textMuted, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Main Controller</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: isOnline ? colors.success : colors.textMuted, background: isOnline ? 'rgba(16,185,129,0.1)' : 'rgba(0,0,0,0.04)', padding: '4px 12px', borderRadius: '20px' }}>
-                <span style={{ fontSize: '1rem' }}>{isOnline ? '✓' : '✗'}</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{isOnline ? 'Connected' : 'Disconnected'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: c1Online ? colors.success : colors.textMuted, background: c1Online ? 'rgba(16,185,129,0.1)' : 'rgba(0,0,0,0.04)', padding: '4px 12px', borderRadius: '20px' }}>
+                <span style={{ fontSize: '1rem' }}>{c1Online ? '✓' : '✗'}</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{c1Online ? 'Connected' : 'Disconnected'}</span>
               </div>
             </div>
             <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.95rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Role:</span> <strong style={{ color: colors.cyan }}>Piano Notes • Violin Bow • Drum Motion</strong></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Last Heartbeat:</span> <strong>{isOnline ? '12ms ago' : '--'}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Battery:</span> <strong>{deviceStatus['controller-1']?.battery ? `${deviceStatus['controller-1'].battery}%` : '--'}</strong></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '0.9rem' }}>
               {['MPU9250 IMU', 'HMC5883L Mag', 'Joystick', 'BMP180 Barometer'].map(s => (
                 <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ color: isOnline ? colors.success : colors.textMuted }}>{isOnline ? '✓' : '○'}</span> {s}
+                  <span style={{ color: c1Online ? colors.success : colors.textMuted }}>{c1Online ? '✓' : '○'}</span> {s}
                 </div>
               ))}
             </div>
@@ -208,19 +209,19 @@ export default function Dashboard() {
                 <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.5rem', color: colors.textMain }}>Controller 2</h3>
                 <span style={{ color: colors.textMuted, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Secondary Controller</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: isOnline ? colors.success : colors.textMuted, background: isOnline ? 'rgba(16,185,129,0.1)' : 'rgba(0,0,0,0.04)', padding: '4px 12px', borderRadius: '20px' }}>
-                <span style={{ fontSize: '1rem' }}>{isOnline ? '✓' : '✗'}</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{isOnline ? 'Connected' : 'Disconnected'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: c2Online ? colors.success : colors.textMuted, background: c2Online ? 'rgba(16,185,129,0.1)' : 'rgba(0,0,0,0.04)', padding: '4px 12px', borderRadius: '20px' }}>
+                <span style={{ fontSize: '1rem' }}>{c2Online ? '✓' : '✗'}</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{c2Online ? 'Connected' : 'Disconnected'}</span>
               </div>
             </div>
             <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.95rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Role:</span> <strong style={{ color: colors.purple }}>Additional Notes • Modifiers</strong></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Last Heartbeat:</span> <strong>{isOnline ? '15ms ago' : '--'}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Battery:</span> <strong>{deviceStatus['controller-2']?.battery ? `${deviceStatus['controller-2'].battery}%` : '--'}</strong></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '0.9rem' }}>
               {['Button Inputs', 'Wi-Fi Connection'].map(s => (
                 <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ color: isOnline ? colors.success : colors.textMuted }}>{isOnline ? '✓' : '○'}</span> {s}
+                  <span style={{ color: c2Online ? colors.success : colors.textMuted }}>{c2Online ? '✓' : '○'}</span> {s}
                 </div>
               ))}
             </div>

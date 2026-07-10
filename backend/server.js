@@ -13,6 +13,8 @@ const cors = require('cors');
 require('dotenv').config();
 
 const connectDB = require('./config/db');
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 
 // Connect to Database
 connectDB();
@@ -22,61 +24,109 @@ const apiRoutes = require('./routes/api');
 
 const app = express();
 const server = http.createServer(app);
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:5174'
+].filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: allowedOrigins,
     methods: ['GET', 'POST']
   },
-  transports: ['websocket', 'polling'] // Prioritize raw websockets for zero-latency
+  transports: ['websocket', 'polling']
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/session', apiRoutes);
 
-// Database Connection logging (using MongoDB Atlas)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
+// Database Connection logging
 console.log('Database configuration loaded.');
+
+// Socket.io Authentication Middleware
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) {
+    return next(new Error('Authentication error: No token provided'));
+  }
+
+  if (process.env.PI_DEVICE_TOKEN && token === process.env.PI_DEVICE_TOKEN) {
+    socket.data.role = 'raspberry_pi';
+    socket.join('hardware-devices');
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.data.user = decoded;
+    socket.data.role = 'browser';
+    socket.join('web-clients');
+    next();
+  } catch (err) {
+    next(new Error('Authentication error: Invalid token'));
+  }
+});
+
+// Global state cache for hardware devices
+const hardwareStateCache = {};
 
 // Socket.io Real-time Communication
 io.on('connection', (socket) => {
-  console.log('A device connected:', socket.id);
+  console.log(`🔌 Device connected: ${socket.id} (Role: ${socket.data.role})`);
 
-  // Hardware sends device status (e.g. { status: 'active', deviceId: 'esp32_1' })
+  // If a web browser connects, send it the latest known hardware state immediately
+  if (socket.data.role === 'browser') {
+    Object.values(hardwareStateCache).forEach(state => {
+      socket.emit('device_status', state);
+    });
+  }
+
+  // --- EVENTS FROM HARDWARE (Broadcast to web-clients) ---
   socket.on('device_status', (data) => {
-    console.log(`📡 Device ID "${data.deviceId}" status update:`, data.active ? 'ACTIVE' : 'INACTIVE');
-    io.emit('update_status', data);
+    hardwareStateCache[data.deviceId] = data;
+    io.to('web-clients').emit('device_status', data);
   });
 
-  // Hardware triggers a note (e.g. { instrument: 'violin', note: 'A4' })
-  socket.on('note_played', (data) => {
-    console.log('Note Played:', data);
-    io.emit('play_note', data);
+  socket.on('performance_event', (data) => {
+    io.to('web-clients').emit('performance_event', data);
   });
 
-  // Relay autotune configuration from web to hub
-  socket.on('autotune_config', (data) => {
-    console.log('Autotune Config Update:', data);
-    io.emit('autotune_setup', data);
+  socket.on('sensor_frame', (data) => {
+    io.to('web-clients').emit('sensor_frame', data);
   });
 
-  // Relay real-time hardware stutter data (from gyro) -> to web dash
-  socket.on('set_stutter', (data) => {
-    io.emit('set_stutter', data);
+  socket.on('session_status', (data) => {
+    io.to('web-clients').emit('session_status', data);
   });
 
-  // Relay real-time audio from web to hub
-  // Notice we don't console.log this to avoid flooding the terminal (runs ~10+ times a second)
-  socket.on('audio_stream', (data) => {
-    // Relay raw audio buffer to all connected clients (specifically the Pi Hub)
-    socket.broadcast.emit('audio_stream', data);
+  socket.on('command_result', (data) => {
+    io.to('web-clients').emit('command_result', data);
+  });
+
+  // --- EVENTS FROM BROWSER (Send to hardware-devices) ---
+  socket.on('hardware_command', (data) => {
+    if (socket.data.role === 'browser') {
+      io.to('hardware-devices').emit('hardware_command', data);
+    }
   });
 
   socket.on('disconnect', () => {
-    console.log('Device disconnected:', socket.id);
+    console.log(`❌ Device disconnected: ${socket.id}`);
   });
 });
 
