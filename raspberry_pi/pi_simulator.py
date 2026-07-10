@@ -2,20 +2,27 @@ import os
 import socketio
 import time
 import sys
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env relative to this file
+load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
 
 sio = socketio.Client()
-SOCKET_URL = os.getenv('SOCKET_URL', 'http://localhost:5000')
-PI_DEVICE_TOKEN = os.getenv('PI_DEVICE_TOKEN', 'test-pi-token-123')
+CLOUD_SOCKET_URL = os.getenv('CLOUD_SOCKET_URL', os.getenv('SOCKET_URL', 'http://localhost:5000')).strip()
+PI_DEVICE_TOKEN = os.getenv('PI_DEVICE_TOKEN', '').strip()
+PI_DEVICE_ID = 'raspberry-pi-4b'
+
+if not PI_DEVICE_TOKEN and not (len(sys.argv) > 1 and sys.argv[1] == '--bad-token'):
+    print("ERROR: PI_DEVICE_TOKEN is missing or empty in .env")
+    sys.exit(1)
 
 @sio.event
 def connect():
-    print(f"Connected to {SOCKET_URL}")
+    print(f"Connected to {CLOUD_SOCKET_URL}")
     
     # Emitting online statuses
-    sio.emit('device_status', {'deviceId': 'raspberry-pi-4b', 'active': True})
+    sio.emit('device_status', {'deviceId': PI_DEVICE_ID, 'active': True})
     sio.emit('device_status', {'deviceId': 'controller-1', 'active': True, 'battery': 100})
     sio.emit('device_status', {'deviceId': 'controller-2', 'active': True, 'battery': 100})
     
@@ -73,7 +80,13 @@ def main():
         token = PI_DEVICE_TOKEN
 
     try:
-        sio.connect(SOCKET_URL, auth={'token': token})
+        # Use exact authentication contract
+        auth_payload = {
+            'role': 'simulator',
+            'token': token,
+            'deviceId': PI_DEVICE_ID
+        }
+        sio.connect(CLOUD_SOCKET_URL, auth=auth_payload)
         time.sleep(1)
         run_tests()
         time.sleep(1)
