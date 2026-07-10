@@ -100,6 +100,10 @@ io.use((socket, next) => {
     socket.data.user = decoded;
     socket.data.role = 'browser';
     socket.join('web-clients');
+    
+    console.log(`[AUTH DIAGNOSTICS] Browser connected: ${socket.id}`);
+    console.log(`[AUTH DIAGNOSTICS] Browser joined web-clients`);
+    
     next();
   } catch (err) {
     next(new Error('Authentication error: Invalid token'));

@@ -89,7 +89,17 @@ def main():
         sio.connect(CLOUD_SOCKET_URL, auth=auth_payload)
         time.sleep(1)
         run_tests()
-        time.sleep(1)
+        
+        print("Waiting for incoming hardware commands... Press Ctrl+C to exit.")
+        while True:
+            # Send device heartbeat/status every 3 seconds
+            sio.emit('device_status', {'deviceId': PI_DEVICE_ID, 'active': True})
+            sio.emit('device_status', {'deviceId': 'controller-1', 'active': True, 'battery': 80})
+            sio.emit('device_status', {'deviceId': 'controller-2', 'active': True, 'battery': 80})
+            time.sleep(3)
+            
+    except KeyboardInterrupt:
+        print("\nCtrl+C pressed. Disconnecting...")
         sio.disconnect()
     except Exception as e:
         print(f"Exception during connect: {e}")

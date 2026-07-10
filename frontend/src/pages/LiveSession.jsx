@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import axios from 'axios';
 import { API_URL } from '../config';
+import DiagnosticCard from '../components/DiagnosticCard';
 
 const InteractiveInstrument = ({ instrument }) => {
   const x = useMotionValue(0);
@@ -150,7 +151,7 @@ function LiveSession() {
     }
   };
 
-  const piActive = deviceStatus['raspberry-pi-4b']?.active;
+  const piActive = deviceStatus['raspberry-pi-4b']?.active || deviceStatus['raspberry-pi-simulator']?.active || false;
   const c1Active = deviceStatus['controller-1']?.active;
   const c2Active = deviceStatus['controller-2']?.active;
 
@@ -165,6 +166,9 @@ function LiveSession() {
           style={{ position: 'absolute', top: '30%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}
         />
       )}
+
+      {/* DIAGNOSTIC CARD */}
+      <DiagnosticCard />
 
       {/* Device Status Bar */}
       <motion.div 
