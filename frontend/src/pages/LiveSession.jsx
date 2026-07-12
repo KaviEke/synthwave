@@ -74,7 +74,7 @@ const InteractiveInstrument = ({ instrument }) => {
 };
 
 function LiveSession() {
-  const { hardwareState, currentNote } = useContext(SocketContext);
+  const { hardwareState, currentNote, lastPerformanceEvent } = useContext(SocketContext);
   const { user, token } = useContext(AuthContext);
 
   const { deviceStatus, activeNotes } = hardwareState;
@@ -89,13 +89,14 @@ function LiveSession() {
   const [displayInstrument, setDisplayInstrument] = useState(null);
   const [displayNote, setDisplayNote] = useState(null);
 
-  // Track note playing logic
+  // Track note playing logic — ALWAYS update display, session only controls recording
   useEffect(() => {
     if (sessionActive && currentNote) {
       setNotesPlayed(prev => prev + 1);
       setInstrumentsUsed(prev => new Set(prev).add(currentNote.instrument));
     }
 
+    // Always update visual display regardless of session state
     if (currentNote) {
       setDisplayInstrument(currentNote.instrument);
       setDisplayNote(currentNote);
@@ -106,9 +107,12 @@ function LiveSession() {
         return () => clearTimeout(timer);
       }
     } else {
-      setDisplayNote(null);
+      // Check if we have a released event — keep showing for 1.5s (handled by SocketContext)
+      if (!lastPerformanceEvent) {
+        setDisplayNote(null);
+      }
     }
-  }, [currentNote, sessionActive]);
+  }, [currentNote, sessionActive, lastPerformanceEvent]);
 
   const toggleSession = async () => {
     if (sessionActive) {
@@ -210,25 +214,54 @@ function LiveSession() {
 
         <div style={{ height: '80px', marginTop: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2 }}>
           <AnimatePresence mode="popLayout">
-            {displayNote && (
-              <motion.div 
-                key={displayNote.note + displayNote.instrument}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.2 }}
-                style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(0,0,0,0.4)', padding: '0.75rem 2rem', borderRadius: '50px', border: `1px solid ${getInstrumentColor(displayNote.instrument)}`, boxShadow: `0 0 30px ${getInstrumentColor(displayNote.instrument)}30`, backdropFilter: 'blur(10px)' }}
-              >
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: getInstrumentColor(displayNote.instrument), boxShadow: `0 0 15px ${getInstrumentColor(displayNote.instrument)}` }}></div>
-                <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: '500' }}>
-                  {displayNote.instrument}
-                </div>
-                <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }}></div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: getInstrumentColor(displayNote.instrument) }}>
-                  {displayNote.note}
-                </div>
-              </motion.div>
-            )}
+            {displayNote && (() => {
+              const dn = displayNote;
+              const noteKey = `${dn.midiNote || dn.drum || dn.note}-${dn.instrument}-${dn.type}`;
+              const isReleased = dn._released;
+              // Build display label
+              let noteLabel;
+              if (dn.instrument === 'drum') {
+                noteLabel = dn.drum || dn.note || '?';
+              } else {
+                noteLabel = dn.swara || dn.noteName || dn.note || '?';
+              }
+              let detailLine;
+              if (dn.instrument === 'drum') {
+                detailLine = dn.controllerId ? `C${dn.controllerId} · GPIO ${dn.gpio ?? '?'}` : '';
+              } else {
+                const parts = [];
+                if (dn.noteName) parts.push(dn.noteName);
+                if (dn.controllerId) parts.push(`C${dn.controllerId}`);
+                if (dn.gpio != null) parts.push(`GPIO ${dn.gpio}`);
+                detailLine = parts.join(' · ');
+              }
+              return (
+                <motion.div 
+                  key={noteKey}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: isReleased ? 0.5 : 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(0,0,0,0.4)', padding: '0.75rem 2rem', borderRadius: '50px', border: `1px solid ${getInstrumentColor(dn.instrument)}`, boxShadow: `0 0 30px ${getInstrumentColor(dn.instrument)}30`, backdropFilter: 'blur(10px)' }}
+                >
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: getInstrumentColor(dn.instrument), boxShadow: `0 0 15px ${getInstrumentColor(dn.instrument)}` }}></div>
+                  <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: '500' }}>
+                    {dn.instrument}{isReleased ? ' ↓' : ''}
+                  </div>
+                  <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }}></div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: getInstrumentColor(dn.instrument), lineHeight: 1 }}>
+                      {noteLabel}
+                    </div>
+                    {detailLine && (
+                      <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px', marginTop: '2px' }}>
+                        {detailLine}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })()}
           </AnimatePresence>
         </div>
       </div>

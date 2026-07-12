@@ -92,11 +92,18 @@ class CloudBridge:
             self.last_sensor_time = now
 
         try:
-            self.sio.emit('performance_event', {
-                'type': event_type,
-                'data': data,
-                'timestamp': int(now * 1000)
-            })
+            # Build flat payload: if data is already a canonical event dict
+            # (from make_event), emit it directly. Otherwise merge fields.
+            if isinstance(data, dict) and data.get('schemaVersion'):
+                # Canonical event from make_event — already has type, timestamp, etc.
+                payload = data
+            else:
+                # Legacy format: merge event_type + data dict into flat payload
+                payload = {'type': event_type, 'timestamp': int(now * 1000)}
+                if isinstance(data, dict):
+                    payload.update(data)
+                    
+            self.sio.emit('performance_event', payload)
         except Exception:
             pass
 

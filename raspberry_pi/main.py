@@ -5,6 +5,8 @@ import threading
 import socket
 import serial
 import queue
+import uuid
+from datetime import datetime, timezone
 from cloud_bridge import CloudBridge
 
 # ======================================================
@@ -27,6 +29,32 @@ tuning_config = {
 }
 
 NOTES_LIST = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+# ======================================================
+#          HARDWARE MAPPING TABLES
+# ======================================================
+# Maps base MIDI note -> GPIO pin for each controller
+CONTROLLER_1_PIANO_GPIO = {60: 13, 61: 14, 62: 16, 63: 17, 64: 18, 65: 19, 66: 23}
+CONTROLLER_2_PIANO_GPIO = {67: 13, 68: 14, 69: 16, 70: 17, 71: 18}
+
+# Maps drum sound name -> GPIO pin for each controller
+CONTROLLER_1_DRUM_GPIO = {'TOM1': 13, 'CYMBAL': 14, 'METALSNARE': 16}
+CONTROLLER_2_DRUM_GPIO = {'TOM2': 13, 'SNARE': 14, 'CRASH': 16, 'HIHAT': 17}
+
+# Violin string GPIO mapping for Controller 1
+VIOLIN_STRING_GPIO = {0: 13, 1: 14, 2: 16, 3: 17}
+# Violin finger GPIO mapping for Controller 2
+VIOLIN_FINGER_GPIO = {0: None, 1: 13, 2: 14, 3: 16}
+
+# MIDI pitch class -> Hindustani swara
+MIDI_TO_SWARA = {
+    0: 'Sa', 1: 'Komal Ri', 2: 'Ri', 3: 'Komal Ga', 4: 'Ga', 5: 'Ma',
+    6: 'Tivra Ma', 7: 'Pa', 8: 'Komal Dha', 9: 'Dha', 10: 'Komal Ni', 11: 'Ni'
+}
+
+# Piano base note -> button index (position in the btnPins array)
+CONTROLLER_1_PIANO_BTNIDX = {60: 0, 61: 1, 62: 2, 63: 3, 64: 4, 65: 5, 66: 6}
+CONTROLLER_2_PIANO_BTNIDX = {67: 0, 68: 1, 69: 2, 70: 3, 71: 4}
 
 # ======================================================
 #                  UDP NETWORK SETTINGS
@@ -229,18 +257,80 @@ def process_commands():
             print(f"Command error: {e}")
 
 def emit_controller_status(device_id, active=True):
-    if connected_to_web:
-        try:
-            sio.emit('device_status', {'deviceId': f'ESP32_{device_id}', 'active': active})
-        except Exception:
-            pass
+    try:
+        bridge.emit_device_status(f'controller-{device_id}', active)
+    except Exception:
+        pass
 
 def emit_usb_kick_status(active=True):
-    if connected_to_web:
-        try:
-            sio.emit('device_status', {'deviceId': 'USB_KICK', 'active': active})
-        except Exception:
-            pass
+    try:
+        bridge.emit_device_status('USB_KICK', active)
+    except Exception:
+        pass
+
+# ======================================================
+#        CANONICAL EVENT HELPER FUNCTIONS
+# ======================================================
+def get_swara(midi_note):
+    """Return Hindustani swara name from MIDI note number."""
+    if midi_note is None or midi_note < 0:
+        return None
+    return MIDI_TO_SWARA.get(midi_note % 12, None)
+
+def get_register_name(offset):
+    """Return register name from piano register offset."""
+    if offset == 12:
+        return 'Uchcha'
+    if offset == -12:
+        return 'Mandra'
+    return 'Madhya'
+
+def get_piano_gpio(device_id, base_note):
+    """Derive GPIO pin from controller ID and base MIDI note."""
+    if device_id == 1:
+        return CONTROLLER_1_PIANO_GPIO.get(base_note, None)
+    elif device_id == 2:
+        return CONTROLLER_2_PIANO_GPIO.get(base_note, None)
+    return None
+
+def get_piano_button_index(device_id, base_note):
+    """Derive button index from controller ID and base MIDI note."""
+    if device_id == 1:
+        return CONTROLLER_1_PIANO_BTNIDX.get(base_note, None)
+    elif device_id == 2:
+        return CONTROLLER_2_PIANO_BTNIDX.get(base_note, None)
+    return None
+
+def get_drum_gpio(device_id, drum_name):
+    """Derive GPIO pin from controller ID and drum sound name."""
+    if device_id == 1:
+        return CONTROLLER_1_DRUM_GPIO.get(drum_name, None)
+    elif device_id == 2:
+        return CONTROLLER_2_DRUM_GPIO.get(drum_name, None)
+    return None
+
+def make_event(event_type, **kwargs):
+    """Build a canonical performance event with schemaVersion, eventId, timestamp."""
+    event = {
+        'schemaVersion': 1,
+        'eventId': str(uuid.uuid4()),
+        'type': event_type,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+    # Set defaults for all canonical fields
+    defaults = {
+        'instrument': None, 'deviceId': None, 'controllerId': None,
+        'gpio': None, 'buttonIndex': None, 'active': None,
+        'midiNote': None, 'baseMidiNote': None, 'noteName': None,
+        'swara': None, 'register': None, 'velocity': None,
+        'drum': None, 'stringIndex': None, 'fingerIndex': None,
+        'bowActive': None, 'meend': None, 'mode': None,
+    }
+    defaults.update(kwargs)
+    # Remove None values — send null-equivalent fields as JSON null
+    for k, v in defaults.items():
+        event[k] = v
+    return event
 
 def play_wav(path: str):
     subprocess.Popen(
@@ -266,7 +356,13 @@ def try_play_drum(sound: str):
             play_wav(SOUNDS[sound])
             last_play[sound] = now
             last_any = now
-            bridge.emit_performance_event('drum_hit', {'drum': sound})
+            bridge.emit_performance_event('drum_hit', make_event(
+                'drum_hit',
+                instrument='drum',
+                active=True,
+                drum=sound,
+                velocity=120,
+            ))
 
 def get_note_name(midi_val):
     if midi_val < 0:
@@ -312,7 +408,12 @@ def set_piano_register_offset(new_offset):
 
         piano_register_offset = new_offset
         active_piano_keys.clear()
-        bridge.emit_performance_event('octave_state', {'offset': new_offset})
+        bridge.emit_performance_event('octave_state', make_event(
+            'octave_state',
+            instrument='piano',
+            register=get_register_name(new_offset),
+            mode=0,
+        ))
 
         # Restart held physical piano keys in the new register.
         for source_key, info in held:
@@ -451,7 +552,20 @@ def set_violin_note(note, label_text=None):
         if current is not None:
             fs.noteoff(CH_VIOLIN, current)
             active_notes_violin.discard(current)
-            bridge.emit_performance_event('note_off', {'instrument': 'violin', 'note': current})
+            bridge.emit_performance_event('note_off', make_event(
+                'note_off',
+                instrument='violin',
+                active=False,
+                midiNote=current,
+                noteName=get_note_name(current),
+                swara=get_swara(current),
+                stringIndex=violin_state.get('string_index'),
+                fingerIndex=violin_state.get('finger_index'),
+                bowActive=False,
+                deviceId='controller-1',
+                controllerId=1,
+                gpio=VIOLIN_STRING_GPIO.get(violin_state.get('string_index')),
+            ))
 
         violin_state["active_note"] = None
 
@@ -461,7 +575,21 @@ def set_violin_note(note, label_text=None):
             violin_state["active_note"] = note
             print(f"[VIOLIN] NOTE ON {note} {label_text if label_text else ''}")
             if label_text:
-                bridge.emit_performance_event('note_on', {'instrument': 'violin', 'note': note, 'name': label_text})
+                bridge.emit_performance_event('note_on', make_event(
+                    'note_on',
+                    instrument='violin',
+                    active=True,
+                    midiNote=note,
+                    noteName=get_note_name(note),
+                    swara=get_swara(note),
+                    stringIndex=violin_state.get('string_index'),
+                    fingerIndex=violin_state.get('finger_index'),
+                    bowActive=True,
+                    deviceId='controller-1',
+                    controllerId=1,
+                    gpio=VIOLIN_STRING_GPIO.get(violin_state.get('string_index')),
+                    velocity=120,
+                ))
                 violin_state["last_emit_name"] = label_text
 
         apply_violin_meend(force=True)
@@ -702,7 +830,10 @@ def handle_packet(message: str, addr):
                 stop_all_notes()
                 reset_violin_state()
                 print(f"Mode changed by controller {device_id}: {MODE_NAMES[m]}")
-                emit_mode_to_website(MODE_NAMES[m])
+                bridge.emit_performance_event('mode_state', make_event(
+                    'mode_state', mode=m, instrument=MODE_NAMES[m].lower(),
+                    deviceId=f'controller-{device_id}', controllerId=device_id
+                ))
                 broadcast_mode(m)
         except Exception as e:
             print("MODE parse error:", e)
@@ -727,7 +858,16 @@ def handle_packet(message: str, addr):
             violin_state["string_index"] = string_index
             violin_state["last_bow_update"] = time.time()
 
-            bridge.emit_performance_event('bow_state', {'active': bow_active, 'string': string_index})
+            bridge.emit_performance_event('bow_state', make_event(
+                'bow_state',
+                instrument='violin',
+                bowActive=bow_active,
+                stringIndex=string_index,
+                deviceId=f'controller-{device_id}',
+                controllerId=device_id,
+                active=bow_active,
+                gpio=VIOLIN_STRING_GPIO.get(string_index),
+            ))
             refresh_violin_output()
         except Exception as e:
             print("V1 parse error:", e)
@@ -781,7 +921,13 @@ def handle_packet(message: str, addr):
             violin_state["meend_position"] = max(-1000, min(1000, position))
             violin_state["last_meend_update"] = time.time()
 
-            bridge.emit_performance_event('meend_state', {'position': position})
+            bridge.emit_performance_event('meend_state', make_event(
+                'meend_state',
+                instrument='violin',
+                meend=position,
+                deviceId=f'controller-{device_id}',
+                controllerId=device_id,
+            ))
             apply_violin_meend()
         except Exception as e:
             print("MEEND parse error:", e)
@@ -845,13 +991,41 @@ def handle_packet(message: str, addr):
                         f"base={note} actual={actual_note} "
                         f"register={piano_register_name(piano_register_offset)}"
                     )
-                    bridge.emit_performance_event('note_on', {'instrument': 'piano', 'note': actual_note, 'name': get_note_name(actual_note)})
+                    bridge.emit_performance_event('note_on', make_event(
+                        'note_on',
+                        instrument='piano',
+                        active=True,
+                        midiNote=actual_note,
+                        baseMidiNote=note,
+                        noteName=get_note_name(actual_note),
+                        swara=get_swara(note),
+                        register=get_register_name(piano_register_offset),
+                        velocity=vel,
+                        controllerId=device_id,
+                        deviceId=f'controller-{device_id}',
+                        gpio=get_piano_gpio(device_id, note),
+                        buttonIndex=get_piano_button_index(device_id, note),
+                    ))
 
                 elif actual_mode == 1:
                     fs.noteon(CH_VIOLIN, note, vel)
                     active_notes_violin.add(note)
                     print(f"[CTRL {device_id}] VIOLIN NOTE ON {note}")
-                    bridge.emit_performance_event('note_on', {'instrument': 'violin', 'note': note, 'name': get_note_name(note)})
+                    bridge.emit_performance_event('note_on', make_event(
+                        'note_on',
+                        instrument='violin',
+                        active=True,
+                        midiNote=note,
+                        noteName=get_note_name(note),
+                        swara=get_swara(note),
+                        velocity=vel,
+                        controllerId=device_id,
+                        deviceId=f'controller-{device_id}',
+                        stringIndex=violin_state.get('string_index'),
+                        fingerIndex=violin_state.get('finger_index'),
+                        bowActive=violin_state.get('bow_active'),
+                        gpio=VIOLIN_STRING_GPIO.get(violin_state.get('string_index')),
+                    ))
         except Exception as e:
             print("NOTE_ON parse error:", e)
         return
@@ -883,11 +1057,37 @@ def handle_packet(message: str, addr):
 
                     fs.noteoff(CH_PIANO, actual_note)
                     active_notes_piano.discard(actual_note)
-                    bridge.emit_performance_event('note_off', {'instrument': 'piano', 'note': actual_note})
+                    bridge.emit_performance_event('note_off', make_event(
+                        'note_off',
+                        instrument='piano',
+                        active=False,
+                        midiNote=actual_note,
+                        baseMidiNote=note,
+                        noteName=get_note_name(actual_note),
+                        swara=get_swara(note),
+                        register=get_register_name(piano_register_offset),
+                        controllerId=device_id,
+                        deviceId=f'controller-{device_id}',
+                        gpio=get_piano_gpio(device_id, note),
+                        buttonIndex=get_piano_button_index(device_id, note),
+                    ))
                 elif actual_mode == 1:
                     fs.noteoff(CH_VIOLIN, note)
                     active_notes_violin.discard(note)
-                    bridge.emit_performance_event('note_off', {'instrument': 'violin', 'note': note})
+                    bridge.emit_performance_event('note_off', make_event(
+                        'note_off',
+                        instrument='violin',
+                        active=False,
+                        midiNote=note,
+                        noteName=get_note_name(note),
+                        swara=get_swara(note),
+                        controllerId=device_id,
+                        deviceId=f'controller-{device_id}',
+                        stringIndex=violin_state.get('string_index'),
+                        fingerIndex=violin_state.get('finger_index'),
+                        bowActive=False,
+                        gpio=VIOLIN_STRING_GPIO.get(violin_state.get('string_index')),
+                    ))
         except Exception as e:
             print("NOTE_OFF parse error:", e)
         return
@@ -896,6 +1096,12 @@ def handle_packet(message: str, addr):
         try:
             device_id = int(parts[1])
             sound = parts[2].upper()
+            hit_vel = 120
+            if len(parts) >= 5:
+                try:
+                    hit_vel = int(parts[4])
+                except Exception:
+                    pass
 
             last_seen[device_id] = time.time()
             controller_ports[device_id] = addr[1]
@@ -906,6 +1112,16 @@ def handle_packet(message: str, addr):
             if m == 2:
                 try_play_drum(sound)
                 print(f"[CTRL {device_id}] DRUM {sound}")
+                bridge.emit_performance_event('drum_hit', make_event(
+                    'drum_hit',
+                    instrument='drum',
+                    active=True,
+                    drum=sound,
+                    velocity=hit_vel,
+                    controllerId=device_id,
+                    deviceId=f'controller-{device_id}',
+                    gpio=get_drum_gpio(device_id, sound),
+                ))
         except Exception as e:
             print("HIT parse error:", e)
         return
@@ -982,7 +1198,7 @@ def main():
         fs.delete()
         sock.close()
 
-        if connected_to_web:
+        if bridge.connected:
             try:
                 bridge.emit_device_status('raspberry-pi-4b', False)
                 bridge.emit_device_status('USB_KICK', False)
