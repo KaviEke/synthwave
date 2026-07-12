@@ -29,9 +29,24 @@ const panelStyle = {
   color: colors.textMain,
 };
 
+// ======================================================
+//     TWELVE-KEY SWARA LABELS FOR THE PIANO VISUALIZER
+// ======================================================
+const SWARA_LABELS = ['Sa', 'K.Ri', 'Ri', 'K.Ga', 'Ga', 'Ma', 'T.Ma', 'Pa', 'K.Dh', 'Dha', 'K.Ni', 'Ni'];
+const BLACK_KEY_INDICES = [1, 3, 6, 8, 10];
+
+function midiToPitchClass(midi) {
+  if (midi === null || midi === undefined) return -1;
+  return ((Number(midi) % 12) + 12) % 12;
+}
+
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
-  const { sendHardwareCommand, hardwareState, currentNote } = useContext(SocketContext);
+  const {
+    sendHardwareCommand, hardwareState, currentNote,
+    lastPerformanceEvent, activeNotes, currentMode: socketMode,
+    currentRegister, bowState, meendState,
+  } = useContext(SocketContext);
   const { deviceStatus } = hardwareState;
 
   // --- State ---
@@ -46,9 +61,25 @@ export default function Dashboard() {
   const c1Online = deviceStatus['controller-1']?.active || false;
   const c2Online = deviceStatus['controller-2']?.active || false;
 
+  // Sync mode from socket
+  useEffect(() => {
+    if (socketMode) setActiveMode(socketMode);
+  }, [socketMode]);
+
+  // Auto-log performance events
+  useEffect(() => {
+    if (!lastPerformanceEvent) return;
+    const e = lastPerformanceEvent;
+    if (e.type === 'note_on') {
+      addLog('action', `${e.instrument?.toUpperCase()} NOTE ON: ${e.swara || '--'} (${e.noteName || e.midiNote}) — Controller ${e.controllerId || '?'} GPIO ${e.gpio ?? '?'}`);
+    } else if (e.type === 'drum_hit') {
+      addLog('action', `DRUM HIT: ${e.drum || '--'} — Controller ${e.controllerId || '?'} GPIO ${e.gpio ?? '?'}`);
+    }
+  }, [lastPerformanceEvent]);
+
   // --- Helpers ---
   const addLog = (type, msg) => {
-    setActivityLog(prev => [...prev, { id: Date.now(), time: new Date().toLocaleTimeString(), type, msg }]);
+    setActivityLog(prev => [...prev.slice(-99), { id: Date.now(), time: new Date().toLocaleTimeString(), type, msg }]);
   };
 
   useEffect(() => {
@@ -105,6 +136,43 @@ export default function Dashboard() {
     { id: 'violin', label: 'Violin', icon: '🎻', color: colors.purple },
     { id: 'drum', label: 'Drum', icon: '🥁', color: colors.pink },
     { id: 'vocal', label: 'Vocal', icon: '🎤', color: '#f59e0b' },
+  ];
+
+  // --- Derive display values from last event ---
+  const perf = lastPerformanceEvent;
+  const isReleased = perf?._released;
+  const perfInstrument = perf?.instrument;
+
+  // Get active pitch classes for piano visualizer
+  const activePitchClasses = new Set();
+  const activeNoteEntries = Object.values(activeNotes || {});
+  activeNoteEntries.forEach(n => {
+    if (n.instrument === 'piano' && n.midiNote != null) {
+      activePitchClasses.add(midiToPitchClass(n.midiNote));
+    }
+  });
+  // Also highlight from lastPerformanceEvent if it's piano note_on
+  if (perf?.type === 'note_on' && perf?.instrument === 'piano' && perf?.midiNote != null) {
+    activePitchClasses.add(midiToPitchClass(perf.midiNote));
+  }
+
+  // Active drum name
+  const activeDrum = (perf?.type === 'drum_hit' && !isReleased) ? perf.drum?.toUpperCase() : null;
+
+  // Active violin string
+  const activeViolinString = (perf?.instrument === 'violin' && perf?.type === 'note_on' && !isReleased)
+    ? perf.stringIndex : null;
+
+  // Drum pad mappings that match real hardware
+  const DRUM_PADS = [
+    { name: 'SNARE', label: 'Snare' },
+    { name: 'HIHAT', label: 'Hi-Hat' },
+    { name: 'TOM1', label: 'Tom 1' },
+    { name: 'TOM2', label: 'Tom 2' },
+    { name: 'CYMBAL', label: 'Cymbal' },
+    { name: 'CRASH', label: 'Crash' },
+    { name: 'METALSNARE', label: 'Metal Snare' },
+    { name: 'KICK', label: 'Kick' },
   ];
 
   return (
@@ -246,33 +314,93 @@ export default function Dashboard() {
                 exit={{ opacity: 0, x: 20 }}
                 style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}
               >
-                {activeMode === 'piano' && (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Current Swara:</span> <strong style={{ fontSize: '1.2rem' }}>{currentNote?.instrument === 'piano' ? currentNote.note : '--'}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>MIDI Note:</span> <strong>{currentNote?.instrument === 'piano' ? 'Active' : '--'}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Pitch Range:</span> <strong style={{ color: colors.cyan }}>Madhya</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Controller:</span> <strong>Controller 1</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Button:</span> <strong>GPIO 13</strong></div>
-                  </>
-                )}
-                {activeMode === 'violin' && (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Current Note:</span> <strong style={{ fontSize: '1.2rem' }}>{currentNote?.instrument === 'violin' ? currentNote.note : '--'}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Selected String:</span> <strong>{currentNote?.instrument === 'violin' ? 'Active String' : '--'}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Bow Status:</span> <strong style={{ color: colors.purple }}>Bow Drag</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Meend Direction:</span> <strong>Neutral</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Modifier:</span> <strong>None</strong></div>
-                  </>
-                )}
-                {activeMode === 'drum' && (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Last Hit:</span> <strong style={{ fontSize: '1.2rem' }}>{currentNote?.instrument === 'drum' ? currentNote.note : '--'}</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Velocity:</span> <strong>118</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Controller:</span> <strong>Controller 1</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}><span style={{ color: colors.textMuted }}>Button:</span> <strong>GPIO 13</strong></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Motion State:</span> <strong style={{ color: colors.pink }}>Hit Detected</strong></div>
-                  </>
-                )}
+                {activeMode === 'piano' && (() => {
+                  const e = (perfInstrument === 'piano' && perf) ? perf : null;
+                  return (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Current Swara:</span>
+                        <strong style={{ fontSize: '1.2rem', color: isReleased ? colors.textMuted : colors.textMain }}>
+                          {e?.swara || '--'}{isReleased ? ' (Released)' : ''}
+                        </strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>MIDI Note:</span>
+                        <strong>{e?.midiNote != null ? `${e.midiNote} (${e.noteName || ''})` : '--'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Pitch Range:</span>
+                        <strong style={{ color: colors.cyan }}>{currentRegister || 'Madhya'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Controller:</span>
+                        <strong>{e?.controllerId ? `Controller ${e.controllerId}` : '--'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Button:</span>
+                        <strong>{e?.gpio != null ? `GPIO ${e.gpio}` : '--'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: colors.textMuted }}>Velocity:</span>
+                        <strong>{e?.velocity != null ? e.velocity : '--'}</strong>
+                      </div>
+                    </>
+                  );
+                })()}
+                {activeMode === 'violin' && (() => {
+                  const e = (perfInstrument === 'violin' && perf) ? perf : null;
+                  return (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Current Note:</span>
+                        <strong style={{ fontSize: '1.2rem' }}>{e?.swara || '--'}{e?.noteName ? ` (${e.noteName})` : ''}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Selected String:</span>
+                        <strong>{e?.stringIndex != null ? `String ${e.stringIndex + 1}` : (bowState.stringIndex != null ? `String ${bowState.stringIndex + 1}` : '--')}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Bow Status:</span>
+                        <strong style={{ color: bowState.active ? colors.purple : colors.textMuted }}>{bowState.active ? 'Active' : 'Idle'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Finger:</span>
+                        <strong>{e?.fingerIndex != null ? `Finger ${e.fingerIndex}` : '--'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: colors.textMuted }}>Meend:</span>
+                        <strong>{meendState !== 0 ? meendState : 'Neutral'}</strong>
+                      </div>
+                    </>
+                  );
+                })()}
+                {activeMode === 'drum' && (() => {
+                  const e = (perfInstrument === 'drum' && perf) ? perf : null;
+                  return (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Last Hit:</span>
+                        <strong style={{ fontSize: '1.2rem' }}>{e?.drum || '--'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Velocity:</span>
+                        <strong>{e?.velocity != null ? e.velocity : '--'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Controller:</span>
+                        <strong>{e?.controllerId ? `Controller ${e.controllerId}` : '--'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '0.5rem' }}>
+                        <span style={{ color: colors.textMuted }}>Button:</span>
+                        <strong>{e?.gpio != null ? `GPIO ${e.gpio}` : '--'}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: colors.textMuted }}>Motion State:</span>
+                        <strong style={{ color: colors.pink }}>{e ? 'Hit Detected' : 'Idle'}</strong>
+                      </div>
+                    </>
+                  );
+                })()}
                 {activeMode === 'vocal' && (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Status:</span> <strong style={{ color: colors.success }}>Vocal mode ready</strong></div>
@@ -299,9 +427,10 @@ export default function Dashboard() {
 
                   {activeMode === 'piano' && (
                     <div style={{ display: 'flex', height: '100%', width: '100%', gap: '4px', padding: '10px 0', minHeight: '240px' }}>
-                      {['Sa', 'K.Ri', 'Ri', 'K.Ga', 'Ga', 'Ma', 'T.Ma', 'Pa', 'K.Dh', 'Dha', 'K.Ni', 'Ni'].map((note, idx) => {
-                        const isBlack = [1, 3, 6, 8, 10].includes(idx);
-                        const isActive = currentNote?.instrument === 'piano' && currentNote?.note === note;
+                      {SWARA_LABELS.map((note, idx) => {
+                        const isBlack = BLACK_KEY_INDICES.includes(idx);
+                        const isActive = activePitchClasses.has(idx);
+                        const activeEvent = isActive && perf;
                         return (
                           <div key={idx} style={{
                             flex: 1, background: isActive ? colors.cyan : (isBlack ? '#334155' : '#f1f5f9'),
@@ -310,10 +439,21 @@ export default function Dashboard() {
                             boxShadow: isActive ? `0 0 15px ${colors.cyan}` : '0 2px 4px rgba(0,0,0,0.1)',
                             zIndex: isBlack ? 1 : 0,
                             marginLeft: isBlack ? '-4%' : '0', marginRight: isBlack ? '-4%' : '0',
-                            display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '10px',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: '10px',
                             border: isActive ? 'none' : '1px solid rgba(0,0,0,0.08)',
+                            transition: 'all 0.15s ease',
                           }}>
                             <span style={{ writingMode: 'vertical-rl', color: isActive ? 'white' : (isBlack ? '#94a3b8' : '#64748b'), fontSize: '0.7rem', fontWeight: 'bold' }}>{note}</span>
+                            {isActive && activeEvent && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                style={{ position: 'absolute', top: '-52px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: 'white', padding: '4px 8px', borderRadius: '6px', fontSize: '0.6rem', whiteSpace: 'nowrap', textAlign: 'center', lineHeight: '1.4', border: `1px solid ${colors.cyan}` }}
+                              >
+                                <div style={{ fontWeight: 700 }}>{activeEvent.swara || note} · {activeEvent.noteName || ''}</div>
+                                <div style={{ color: '#94a3b8' }}>C{activeEvent.controllerId || '?'} · GPIO {activeEvent.gpio ?? '?'}</div>
+                              </motion.div>
+                            )}
                           </div>
                         );
                       })}
@@ -323,8 +463,7 @@ export default function Dashboard() {
                   {activeMode === 'violin' && (
                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', padding: '1rem 2rem', minHeight: '240px' }}>
                       {['String 1 – Pa', 'String 2 – Sa', 'String 3 – Pa', 'String 4 – Sa'].map((str, idx) => {
-                        const strLabel = str.split(' – ')[0];
-                        const isActive = currentNote?.instrument === 'violin' && currentNote?.note === strLabel;
+                        const isActive = activeViolinString === idx;
                         return (
                           <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                             <span style={{ width: '100px', fontSize: '0.9rem', color: isActive ? colors.purple : colors.textMuted, fontWeight: isActive ? 'bold' : 'normal' }}>{str}</span>
@@ -345,24 +484,24 @@ export default function Dashboard() {
 
                   {activeMode === 'drum' && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', height: '100%', alignContent: 'center', minHeight: '240px' }}>
-                      {['Snare', 'Hi-Hat', 'Tom 1', 'Tom 2', 'Tom 3', 'Cymbal', 'Crash'].map((pad, idx) => {
-                        const isActive = currentNote?.instrument === 'drum' && currentNote?.note === pad;
+                      {DRUM_PADS.map((pad, idx) => {
+                        const isActive = activeDrum === pad.name;
                         return (
                           <motion.button
                             key={idx}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.9, backgroundColor: colors.pink }}
-                            onClick={() => handleDrumTest(pad)}
+                            onClick={() => handleDrumTest(pad.name)}
                             style={{
                               width: '85px', height: '85px', borderRadius: '50%',
                               background: isActive ? colors.pink : 'rgba(236, 72, 153, 0.05)',
                               border: `2px solid ${colors.pink}`,
                               color: isActive ? 'white' : colors.pink, fontWeight: 'bold', cursor: 'pointer',
                               boxShadow: isActive ? `0 0 20px ${colors.pink}` : `0 2px 8px rgba(236, 72, 153, 0.1)`,
-                              transition: 'all 0.2s', fontSize: '0.85rem',
+                              transition: 'all 0.2s', fontSize: '0.75rem',
                             }}
                           >
-                            {pad}
+                            {pad.label}
                           </motion.button>
                         );
                       })}
@@ -437,21 +576,15 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: colors.textMuted }}>Detected State:</span>
                   <div style={{ fontSize: '1.8rem', fontWeight: '900', color: activeMode === 'drum' ? colors.pink : colors.purple }}>
-                    {activeMode === 'drum' ? 'Hit' : 'Bow Drag'}
+                    {activeMode === 'drum' ? (activeDrum ? 'Hit' : 'Idle') : (bowState.active ? 'Bow Active' : 'Idle')}
                   </div>
                 </div>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                    <span style={{ color: colors.textMuted }}>Confidence:</span>
-                    <strong style={{ fontSize: '1.2rem', color: colors.textMain }}>{activeMode === 'drum' ? '92%' : '88%'}</strong>
-                  </div>
-                  <div style={{ width: '100%', height: '10px', background: 'rgba(0,0,0,0.06)', borderRadius: '5px', overflow: 'hidden' }}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: activeMode === 'drum' ? '92%' : '88%' }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      style={{ height: '100%', background: activeMode === 'drum' ? colors.pink : colors.purple, borderRadius: '5px' }}
-                    />
+                    <span style={{ color: colors.textMuted }}>Status:</span>
+                    <strong style={{ fontSize: '1.2rem', color: colors.textMain }}>
+                      {activeMode === 'drum' ? (activeDrum ? `${activeDrum}` : 'Waiting...') : (bowState.active ? 'Sustain ON' : 'Waiting...')}
+                    </strong>
                   </div>
                 </div>
               </div>

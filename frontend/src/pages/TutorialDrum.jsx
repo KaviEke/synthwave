@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SocketContext } from '../context/SocketContext';
@@ -8,15 +8,17 @@ const ACCENT = '#ec4899';
 const DRUM_PADS = [
   { name: 'KICK', label: 'Kick', color: '#ef4444', icon: '🦶' },
   { name: 'SNARE', label: 'Snare', color: '#eab308', icon: '🥁' },
-  { name: 'HAT', label: 'Hi-Hat', color: '#22c55e', icon: '🔔' },
-  { name: 'TOM', label: 'Tom', color: '#3b82f6', icon: '🪘' },
+  { name: 'HIHAT', label: 'Hi-Hat', color: '#22c55e', icon: '🔔' },
+  { name: 'TOM1', label: 'Tom 1', color: '#3b82f6', icon: '🪘' },
+  { name: 'TOM2', label: 'Tom 2', color: '#0ea5e9', icon: '🪘' },
   { name: 'CRASH', label: 'Crash', color: '#a855f7', icon: '💥' },
+  { name: 'CYMBAL', label: 'Cymbal', color: '#f97316', icon: '✨' },
 ];
 
 const TutorialDrum = () => {
   const { songId } = useParams();
   const navigate = useNavigate();
-  const { currentNote } = useContext(SocketContext);
+  const { lastPerformanceEvent, hardwareState } = useContext(SocketContext);
 
   const song = songs.find((s) => s.id === songId);
   const notes = song?.parts?.drum?.notes || [];
@@ -27,13 +29,14 @@ const TutorialDrum = () => {
   const [feedback, setFeedback] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [demoMode, setDemoMode] = useState(false);
 
-  useEffect(() => {
-    if (!currentNote || completed) return;
-    if (currentNote.instrument !== 'drum') return;
+  const piOnline = hardwareState.deviceStatus['raspberry-pi-4b']?.active || hardwareState.deviceStatus['raspberry-pi-simulator']?.active || false;
 
-    const played = currentNote.note?.toUpperCase();
+  const processHit = useCallback((playedDrum) => {
+    if (completed || !playedDrum) return;
     const expected = notes[currentIndex]?.toUpperCase();
+    const played = playedDrum.toUpperCase();
 
     if (played === expected) {
       setFeedback('correct');
@@ -50,7 +53,20 @@ const TutorialDrum = () => {
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 400 / speed);
     }
-  }, [currentNote]);
+  }, [completed, currentIndex, totalNotes, notes, speed]);
+
+  useEffect(() => {
+    if (!lastPerformanceEvent || completed || demoMode) return;
+    if (lastPerformanceEvent.type !== 'drum_hit') return;
+
+    const drum = lastPerformanceEvent.drum;
+    if (drum) processHit(drum);
+  }, [lastPerformanceEvent, completed, demoMode, processHit]);
+
+  const handleDemoClick = (drumName) => {
+    if (!demoMode) return;
+    processHit(drumName);
+  };
 
   if (!song) {
     return (
@@ -102,6 +118,21 @@ const TutorialDrum = () => {
           🥁 {song.title}
         </h1>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginRight: '0.5rem' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: piOnline ? '#22c55e' : '#ef4444' }} />
+            <span style={{ fontSize: '0.7rem', color: piOnline ? '#22c55e' : '#9ca3af' }}>{piOnline ? 'HW' : 'No HW'}</span>
+          </div>
+          <button
+            onClick={() => setDemoMode(d => !d)}
+            style={{
+              ...btnStyle, padding: '0.3rem 0.8rem', fontSize: '0.8rem',
+              background: demoMode ? `${ACCENT}33` : 'transparent',
+              borderColor: demoMode ? ACCENT : 'rgba(255,255,255,0.2)',
+              color: demoMode ? ACCENT : '#9ca3af',
+            }}
+          >
+            {demoMode ? '🖱 Demo ON' : '🖱 Demo'}
+          </button>
           <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Speed:</span>
           {[1, 1.5, 2].map((s) => (
             <button key={s} onClick={() => setSpeed(s)} style={{
@@ -188,6 +219,7 @@ const TutorialDrum = () => {
             return (
               <motion.div
                 key={pad.name}
+                onClick={() => handleDemoClick(pad.name)}
                 animate={isActive ? {
                   boxShadow: [`0 0 20px ${pad.color}44`, `0 0 40px ${pad.color}88`, `0 0 20px ${pad.color}44`],
                   scale: [1, 1.05, 1],
@@ -205,7 +237,7 @@ const TutorialDrum = () => {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'default',
+                  cursor: demoMode ? 'pointer' : 'default',
                   transition: 'border-color 0.3s',
                 }}
               >
@@ -221,6 +253,11 @@ const TutorialDrum = () => {
             );
           })}
         </div>
+        {demoMode && (
+          <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.8rem', marginTop: '1.5rem' }}>
+            🖱 Click a drum to play (Demo Mode)
+          </p>
+        )}
       </div>
     </div>
   );

@@ -6,22 +6,16 @@ import { songs } from '../data/songs';
 
 const ACCENT = '#a855f7';
 const VIOLIN_STRINGS = [
-  { name: 'G', color: '#22c55e', y: 0 },
-  { name: 'D', color: '#eab308', y: 1 },
-  { name: 'A', color: '#f97316', y: 2 },
-  { name: 'E', color: '#ef4444', y: 3 },
+  { name: 'String 1 (Pa)', index: 0, swara: 'Pa', color: '#22c55e', y: 0 },
+  { name: 'String 2 (Sa)', index: 1, swara: 'Sa', color: '#eab308', y: 1 },
+  { name: 'String 3 (Pa)', index: 2, swara: 'Pa', color: '#f97316', y: 2 },
+  { name: 'String 4 (Sa)', index: 3, swara: 'Sa', color: '#ef4444', y: 3 },
 ];
-
-// Map note letters to their closest string for visual highlighting
-const noteToString = (note) => {
-  const map = { G: 'G', A: 'A', B: 'A', C: 'D', D: 'D', E: 'E', F: 'E' };
-  return map[note?.toUpperCase()] || 'G';
-};
 
 const TutorialViolin = () => {
   const { songId } = useParams();
   const navigate = useNavigate();
-  const { currentNote } = useContext(SocketContext);
+  const { lastPerformanceEvent, hardwareState, bowState } = useContext(SocketContext);
 
   const song = songs.find((s) => s.id === songId);
   const notes = song?.parts?.violin?.notes || [];
@@ -29,15 +23,18 @@ const TutorialViolin = () => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [feedback, setFeedback] = useState(null);
+  const [feedback, setFeedback] = useState(null); // 'correct' | 'wrong' | null
   const [completed, setCompleted] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [demoMode, setDemoMode] = useState(false);
+
+  const piOnline = hardwareState.deviceStatus['raspberry-pi-4b']?.active || hardwareState.deviceStatus['raspberry-pi-simulator']?.active || false;
 
   const getLyricContext = useCallback(() => {
     if (!song?.lyrics) return { lineIndex: -1 };
     let count = 0;
     for (let i = 0; i < song.lyrics.length; i++) {
-      const lineLen = song.lyrics[i].notes.length;
+      const lineLen = song.lyrics[i].notes.split(' ').length;
       if (currentIndex < count + lineLen) return { lineIndex: i };
       count += lineLen;
     }
@@ -46,14 +43,14 @@ const TutorialViolin = () => {
 
   const { lineIndex } = getLyricContext();
 
-  useEffect(() => {
-    if (!currentNote || completed) return;
-    if (currentNote.instrument !== 'violin') return;
-
-    const played = currentNote.note?.toUpperCase();
+  const processNote = useCallback((playedSwara) => {
+    if (completed || !playedSwara) return;
     const expected = notes[currentIndex]?.toUpperCase();
+    const played = playedSwara.toUpperCase();
 
-    if (played === expected) {
+    const isCorrect = played === expected || played.includes(expected) || expected.includes(played);
+
+    if (isCorrect) {
       setFeedback('correct');
       setScore((s) => s + 1);
       setTimeout(() => {
@@ -68,7 +65,21 @@ const TutorialViolin = () => {
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 400 / speed);
     }
-  }, [currentNote]);
+  }, [completed, currentIndex, totalNotes, notes, speed]);
+
+  useEffect(() => {
+    if (!lastPerformanceEvent || completed || demoMode) return;
+    if (lastPerformanceEvent.type !== 'note_on') return;
+    if (lastPerformanceEvent.instrument !== 'violin') return;
+
+    const swara = lastPerformanceEvent.swara;
+    if (swara) processNote(swara);
+  }, [lastPerformanceEvent, completed, demoMode, processNote]);
+
+  const handleDemoClick = (swara) => {
+    if (!demoMode) return;
+    processNote(swara);
+  };
 
   if (!song) {
     return (
@@ -109,7 +120,8 @@ const TutorialViolin = () => {
   }
 
   const expectedNote = notes[currentIndex];
-  const activeString = noteToString(expectedNote);
+  // Live visual updates based on real bow state
+  const activeStringIndex = bowState.active ? bowState.stringIndex : null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0f1c', padding: '1.5rem', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
@@ -120,6 +132,21 @@ const TutorialViolin = () => {
           🎻 {song.title}
         </h1>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginRight: '0.5rem' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: piOnline ? '#22c55e' : '#ef4444' }} />
+            <span style={{ fontSize: '0.7rem', color: piOnline ? '#22c55e' : '#9ca3af' }}>{piOnline ? 'HW' : 'No HW'}</span>
+          </div>
+          <button
+            onClick={() => setDemoMode(d => !d)}
+            style={{
+              ...btnStyle, padding: '0.3rem 0.8rem', fontSize: '0.8rem',
+              background: demoMode ? `${ACCENT}33` : 'transparent',
+              borderColor: demoMode ? ACCENT : 'rgba(255,255,255,0.2)',
+              color: demoMode ? ACCENT : '#9ca3af',
+            }}
+          >
+            {demoMode ? '🖱 Demo ON' : '🖱 Demo'}
+          </button>
           <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Speed:</span>
           {[1, 1.5, 2].map((s) => (
             <button key={s} onClick={() => setSpeed(s)} style={{
@@ -204,21 +231,25 @@ const TutorialViolin = () => {
 
             {/* Strings */}
             {VIOLIN_STRINGS.map((str) => {
-              const isActive = str.name === activeString;
+              const isActive = str.index === activeStringIndex;
+              const isExpected = demoMode && (str.swara === expectedNote);
+              const showActive = isActive || isExpected;
               return (
                 <motion.div
                   key={str.name}
-                  animate={isActive ? { scaleY: [1, 1.5, 1], opacity: [0.7, 1, 0.7] } : {}}
-                  transition={isActive ? { duration: 0.6, repeat: Infinity } : {}}
+                  onClick={() => handleDemoClick(str.swara)}
+                  animate={showActive ? { scaleY: [1, 1.5, 1], opacity: [0.7, 1, 0.7] } : {}}
+                  transition={showActive ? { duration: 0.6, repeat: Infinity } : {}}
                   style={{
                     position: 'absolute',
                     left: 0, right: 0,
                     top: 20 + str.y * 48,
-                    height: isActive ? 4 : 2,
-                    background: isActive ? str.color : 'rgba(255,255,255,0.15)',
-                    boxShadow: isActive ? `0 0 12px ${str.color}88, 0 0 24px ${str.color}44` : 'none',
+                    height: showActive ? 4 : 2,
+                    background: showActive ? str.color : 'rgba(255,255,255,0.15)',
+                    boxShadow: showActive ? `0 0 12px ${str.color}88, 0 0 24px ${str.color}44` : 'none',
                     transition: 'all 0.3s',
                     borderRadius: 2,
+                    cursor: demoMode ? 'pointer' : 'default',
                   }}
                 />
               );
@@ -226,7 +257,7 @@ const TutorialViolin = () => {
 
             {/* String labels */}
             {VIOLIN_STRINGS.map((str) => {
-              const isActive = str.name === activeString;
+              const isActive = str.index === activeStringIndex || (demoMode && str.swara === expectedNote);
               return (
                 <div key={`label-${str.name}`} style={{
                   position: 'absolute',
@@ -240,16 +271,13 @@ const TutorialViolin = () => {
               );
             })}
           </div>
+          
+          {demoMode && (
+            <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.8rem', marginTop: '1.5rem' }}>
+              🖱 Click a string to play {expectedNote} (Demo Mode)
+            </p>
+          )}
 
-          {/* String Legend */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '1rem' }}>
-            {VIOLIN_STRINGS.map((str) => (
-              <div key={`leg-${str.name}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: str.color }} />
-                <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>{str.name} string</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SocketContext } from '../context/SocketContext';
 import { songs } from '../data/songs';
 
-const PIANO_KEYS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const SWARA_KEYS = ['Sa', 'Ri', 'Ga', 'Ma', 'Pa', 'Dha', 'Ni'];
 const ACCENT = '#0ea5e9';
 
 const TutorialPiano = () => {
   const { songId } = useParams();
   const navigate = useNavigate();
-  const { currentNote } = useContext(SocketContext);
+  const { lastPerformanceEvent, currentNote, hardwareState } = useContext(SocketContext);
 
   const song = songs.find((s) => s.id === songId);
   const notes = song?.parts?.piano?.notes || [];
@@ -21,13 +21,16 @@ const TutorialPiano = () => {
   const [feedback, setFeedback] = useState(null); // 'correct' | 'wrong' | null
   const [completed, setCompleted] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [demoMode, setDemoMode] = useState(false);
+
+  const piOnline = hardwareState.deviceStatus['raspberry-pi-4b']?.active || hardwareState.deviceStatus['raspberry-pi-simulator']?.active || false;
 
   // Compute which lyric line the current note belongs to
   const getLyricContext = useCallback(() => {
     if (!song?.lyrics) return { lineIndex: -1, noteInLine: -1 };
     let count = 0;
     for (let i = 0; i < song.lyrics.length; i++) {
-      const lineLen = song.lyrics[i].notes.length;
+      const lineLen = song.lyrics[i].notes.split(' ').length;
       if (currentIndex < count + lineLen) {
         return { lineIndex: i, noteInLine: currentIndex - count };
       }
@@ -38,15 +41,16 @@ const TutorialPiano = () => {
 
   const { lineIndex } = getLyricContext();
 
-  // Listen for note input
-  useEffect(() => {
-    if (!currentNote || completed) return;
-    if (currentNote.instrument !== 'piano') return;
-
-    const played = currentNote.note?.toUpperCase();
+  // Process a played note (from hardware or demo click)
+  const processNote = useCallback((playedSwara) => {
+    if (completed || !playedSwara) return;
     const expected = notes[currentIndex]?.toUpperCase();
+    const played = playedSwara.toUpperCase();
 
-    if (played === expected) {
+    // Match: exact match or shortform match (e.g., 'KOMAL RI' → 'RI')
+    const isCorrect = played === expected || played.includes(expected) || expected.includes(played);
+
+    if (isCorrect) {
       setFeedback('correct');
       setScore((s) => s + 1);
       setTimeout(() => {
@@ -61,7 +65,23 @@ const TutorialPiano = () => {
       setFeedback('wrong');
       setTimeout(() => setFeedback(null), 400 / speed);
     }
-  }, [currentNote]);
+  }, [completed, currentIndex, totalNotes, notes, speed]);
+
+  // Listen for hardware note input via canonical events
+  useEffect(() => {
+    if (!lastPerformanceEvent || completed || demoMode) return;
+    if (lastPerformanceEvent.type !== 'note_on') return;
+    if (lastPerformanceEvent.instrument !== 'piano') return;
+
+    const swara = lastPerformanceEvent.swara;
+    if (swara) processNote(swara);
+  }, [lastPerformanceEvent, completed, demoMode, processNote]);
+
+  // Demo mode: click a key
+  const handleDemoClick = (key) => {
+    if (!demoMode) return;
+    processNote(key);
+  };
 
   if (!song) {
     return (
@@ -125,6 +145,23 @@ const TutorialPiano = () => {
           🎹 {song.title}
         </h1>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {/* Hardware status indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginRight: '0.5rem' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: piOnline ? '#22c55e' : '#ef4444' }} />
+            <span style={{ fontSize: '0.7rem', color: piOnline ? '#22c55e' : '#9ca3af' }}>{piOnline ? 'HW' : 'No HW'}</span>
+          </div>
+          {/* Demo mode toggle */}
+          <button
+            onClick={() => setDemoMode(d => !d)}
+            style={{
+              ...btnStyle, padding: '0.3rem 0.8rem', fontSize: '0.8rem',
+              background: demoMode ? `${ACCENT}33` : 'transparent',
+              borderColor: demoMode ? ACCENT : 'rgba(255,255,255,0.2)',
+              color: demoMode ? ACCENT : '#9ca3af',
+            }}
+          >
+            {demoMode ? '🖱 Demo ON' : '🖱 Demo'}
+          </button>
           <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Speed:</span>
           {[1, 1.5, 2].map((s) => (
             <button
@@ -232,14 +269,15 @@ const TutorialPiano = () => {
         )}
       </div>
 
-      {/* Piano Keyboard */}
+      {/* Piano Keyboard - Swara Keys */}
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
         <div style={{ ...panelStyle, padding: 'var(--panel-padding-medium)', display: 'flex', justifyContent: 'center', gap: '0.4rem', flexWrap: 'nowrap' }}>
-          {PIANO_KEYS.map((key) => {
+          {SWARA_KEYS.map((key) => {
             const isActive = key === expectedNote;
             return (
               <motion.div
                 key={key}
+                onClick={() => handleDemoClick(key)}
                 animate={isActive ? {
                   boxShadow: [`0 0 15px ${ACCENT}66`, `0 0 30px ${ACCENT}aa`, `0 0 15px ${ACCENT}66`],
                 } : {}}
@@ -247,7 +285,7 @@ const TutorialPiano = () => {
                 style={{
                   flex: '1 1 0',
                   minWidth: '32px',
-                  maxWidth: '72px',
+                  maxWidth: '90px',
                   height: 'var(--piano-key-height, 140px)',
                   background: isActive
                     ? `linear-gradient(180deg, ${ACCENT}33, ${ACCENT}11)`
@@ -258,7 +296,7 @@ const TutorialPiano = () => {
                   alignItems: 'flex-end',
                   justifyContent: 'center',
                   paddingBottom: '1rem',
-                  cursor: 'default',
+                  cursor: demoMode ? 'pointer' : 'default',
                   position: 'relative',
                 }}
               >
@@ -285,6 +323,11 @@ const TutorialPiano = () => {
             );
           })}
         </div>
+        {demoMode && (
+          <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.8rem', marginTop: '0.8rem' }}>
+            🖱 Click any key to play (Demo Mode)
+          </p>
+        )}
       </div>
     </div>
   );
