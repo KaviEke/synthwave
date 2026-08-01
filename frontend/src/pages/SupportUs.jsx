@@ -30,7 +30,7 @@ function SupportUs() {
           Support Us
         </h1>
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>
-          We would love to hear your feedback on the SYNTRONICS hardware experience! Send us a message below.
+          We would love to hear your feedback on the SynthWave hardware experience! Send us a message below.
         </p>
 
         {submitted && (

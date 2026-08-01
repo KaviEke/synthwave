@@ -740,7 +740,7 @@ export default function VocalTuner() {
            <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.4)', padding: '1rem 2rem', borderRadius: '15px' }}>
               <p style={{ color: '#10b981', fontSize: '0.85rem', margin: 0 }}>✅ Session Recorded!</p>
               <audio controls src={URL.createObjectURL(recordedBlob)} style={{ height: '35px', borderRadius: '30px', margin: '0.5rem 0' }}/>
-              <a href={URL.createObjectURL(recordedBlob)} download="Syntronics-Vocal-Session.webm" style={{ color: '#c026d3', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 'bold' }}>
+              <a href={URL.createObjectURL(recordedBlob)} download="SynthWave-Vocal-Session.webm" style={{ color: '#c026d3', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 'bold' }}>
                 ⬇ Download Audio File
               </a>
            </div>
