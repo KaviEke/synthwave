@@ -43,7 +43,7 @@ function Login() {
       >
         {/* Left Branding Pane */}
         <div style={{ flex: '1 1 350px', background: 'transparent', padding: '4rem 3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'white', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', letterSpacing: '2px' }}>SYNTRONICS</h1>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', letterSpacing: '2px' }}>SynthWave</h1>
           <p style={{ fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.6 }}>Access your digital instrument control center and dive back into the music.</p>
         </div>
 
