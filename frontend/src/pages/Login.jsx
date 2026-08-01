@@ -11,6 +11,11 @@ function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  React.useEffect(() => {
+    document.title = "Login | SynthWave Motion";
+    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');

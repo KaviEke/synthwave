@@ -22,6 +22,11 @@ const TutorialPiano = () => {
   const [completed, setCompleted] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [demoMode, setDemoMode] = useState(false);
+  
+  useEffect(() => {
+    document.title = "Tutorial | SynthWave Motion";
+    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
+  }, []);
 
   const piOnline = hardwareState.deviceStatus['raspberry-pi-4b']?.active || hardwareState.deviceStatus['raspberry-pi-simulator']?.active || false;
 

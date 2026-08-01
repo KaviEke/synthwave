@@ -12,6 +12,11 @@ function Register() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  React.useEffect(() => {
+    document.title = "Create Account | SynthWave Motion";
+    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
