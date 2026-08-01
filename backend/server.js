@@ -25,22 +25,28 @@ const apiRoutes = require('./routes/api');
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:5174'
-].filter(Boolean);
+// Build allowed origins from ALLOWED_ORIGINS (comma-separated) with FRONTEND_URL fallback
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+    : [process.env.FRONTEND_URL].filter(Boolean)
+).concat(['http://localhost:5173', 'http://localhost:5174']);
+
+console.log(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
+
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ['GET', 'POST'],
+  credentials: true
+};
 
 const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST']
-  },
+  cors: corsOptions,
   transports: ['websocket', 'polling']
 });
 
 // Middleware
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
