@@ -64,6 +64,11 @@ export default function Dashboard() {
   ]);
   const logContainerRef = useRef(null);
 
+  useEffect(() => {
+    document.title = "SynthWave Dashboard | Interactive Digital Instrument";
+    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
+  }, []);
+
   const piOnline = deviceStatus['raspberry-pi-4b']?.active || deviceStatus['raspberry-pi-simulator']?.active || false;
   const c1Online = deviceStatus['controller-1']?.active || false;
   const c2Online = deviceStatus['controller-2']?.active || false;
@@ -451,89 +456,139 @@ export default function Dashboard() {
                   {/* ===== 3D PIANO KEYS ===== */}
                   {activeMode === 'piano' && (
                     <div style={{
-                      display: 'flex', height: '100%', width: '100%', gap: '3px', padding: '20px 10px 10px',
-                      minHeight: '280px', perspective: '800px',
+                      display: 'flex', height: '100%', width: '100%', justifyContent: 'center', alignItems: 'center',
+                      minHeight: '360px', perspective: '1200px', padding: '20px 0',
                     }}>
-                      {SWARA_LABELS.map((note, idx) => {
-                        const isBlack = BLACK_KEY_INDICES.includes(idx);
-                        const isActive = activePitchClasses.has(idx);
-                        const activeEvent = isActive && perf;
-                        return (
-                          <motion.div
-                            key={idx}
-                            animate={isActive ? { rotateX: -4, y: 6 } : { rotateX: 0, y: 0 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                            style={{
-                              flex: isBlack ? 0.7 : 1,
-                              position: 'relative',
-                              height: isBlack ? '62%' : '100%',
-                              zIndex: isBlack ? 2 : 1,
-                              marginLeft: isBlack ? '-3%' : '0',
-                              marginRight: isBlack ? '-3%' : '0',
-                              transformStyle: 'preserve-3d',
-                              transformOrigin: 'top center',
-                            }}
-                          >
-                            {/* Key top face */}
-                            <div style={{
-                              width: '100%', height: '100%',
-                              borderRadius: '0 0 8px 8px',
-                              background: isActive
-                                ? `linear-gradient(180deg, ${colors.cyan}, ${colors.cyan}cc)`
-                                : isBlack
-                                  ? 'linear-gradient(180deg, #1e293b, #0f172a)'
-                                  : 'linear-gradient(180deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9))',
-                              boxShadow: isActive
-                                ? `0 0 25px ${colors.cyan}88, 0 8px 20px rgba(0,0,0,0.5), inset 0 -3px 6px ${colors.cyan}44`
-                                : isBlack
-                                  ? '0 6px 12px rgba(0,0,0,0.6), inset 0 -2px 4px rgba(0,0,0,0.3)'
-                                  : '0 8px 16px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.15)',
-                              border: isActive
-                                ? `1px solid ${colors.cyan}`
-                                : `1px solid ${isBlack ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)'}`,
-                              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
-                              paddingBottom: '12px',
-                              transition: 'background 0.12s, box-shadow 0.12s',
-                            }}>
-                              <span style={{
-                                writingMode: 'vertical-rl',
-                                color: isActive ? 'white' : (isBlack ? '#475569' : '#64748b'),
-                                fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1px',
-                              }}>{note}</span>
+                      {/* Keyboard Base Housing */}
+                      <div style={{
+                        position: 'relative',
+                        display: 'flex', width: '96%', height: '75%', gap: '4px', padding: '16px 12px 28px',
+                        background: 'linear-gradient(180deg, #0f172a, #020617)',
+                        borderRadius: '12px',
+                        boxShadow: '0 25px 50px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.05), inset 0 -4px 20px rgba(6,182,212,0.2)',
+                        transformStyle: 'preserve-3d',
+                        transform: 'rotateX(14deg) translateY(10px)',
+                        borderBottom: '6px solid #000',
+                      }}>
+                        {SWARA_LABELS.map((note, idx) => {
+                          const isBlack = BLACK_KEY_INDICES.includes(idx);
+                          const isActive = activePitchClasses.has(idx);
+                          const activeEvent = isActive && perf;
+                          
+                          const keyDepth = isBlack ? 32 : 18; // Extrusion depth (Z)
+                          
+                          return (
+                            <div
+                              key={idx}
+                              style={{
+                                flex: isBlack ? 0.65 : 1,
+                                position: 'relative',
+                                height: isBlack ? '65%' : '100%',
+                                zIndex: isBlack ? 10 : 1,
+                                marginLeft: isBlack ? '-3.5%' : '0',
+                                marginRight: isBlack ? '-3.5%' : '0',
+                                transformStyle: 'preserve-3d',
+                                transformOrigin: 'top center',
+                                transform: isActive 
+                                  ? `translateY(${isBlack ? 5 : 8}px) translateZ(-${isBlack ? 3 : 6}px) rotateX(2deg)` 
+                                  : 'translateY(0px) translateZ(0px) rotateX(0deg)',
+                                transition: isActive ? 'transform 0.08s cubic-bezier(0.4, 0, 0.2, 1)' : 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                              }}
+                            >
+                              {/* Top Face */}
+                              <div style={{
+                                position: 'absolute', inset: 0, boxSizing: 'border-box',
+                                transform: `translateZ(${keyDepth}px)`,
+                                borderRadius: '0 0 4px 4px',
+                                background: isBlack
+                                  ? (isActive ? `linear-gradient(180deg, #1e293b, ${colors.cyan})` : 'linear-gradient(180deg, #1e293b, #09090b)')
+                                  : (isActive ? `linear-gradient(180deg, #f8fafc, ${colors.cyan}99)` : 'linear-gradient(180deg, #ffffff, #f1f5f9)'),
+                                boxShadow: isActive
+                                  ? `0 0 20px ${colors.cyan}99, inset 0 -3px 8px ${colors.cyan}`
+                                  : (isBlack ? 'inset 0 -2px 5px rgba(255,255,255,0.15)' : 'inset 0 -2px 5px rgba(0,0,0,0.1)'),
+                                border: isBlack ? '1px solid #000' : '1px solid #cbd5e1',
+                                borderTop: 'none',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
+                                paddingBottom: '12px',
+                                transition: 'background 0.1s, box-shadow 0.1s',
+                              }}>
+                                <span style={{
+                                  writingMode: 'vertical-rl',
+                                  color: isActive ? (isBlack ? '#fff' : '#0f172a') : (isBlack ? '#94a3b8' : '#64748b'),
+                                  fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1px',
+                                  textShadow: isActive ? `0 0 8px ${isBlack ? '#fff' : colors.cyan}` : 'none',
+                                }}>{note}</span>
+                              </div>
+
+                              {/* Front Face */}
+                              <div style={{
+                                position: 'absolute', bottom: 0, left: 0, right: 0, height: `${keyDepth}px`, boxSizing: 'border-box',
+                                transformOrigin: 'bottom', transform: 'rotateX(-90deg)',
+                                background: isBlack 
+                                  ? (isActive ? `linear-gradient(to bottom, ${colors.cyan}99, #000)` : 'linear-gradient(to bottom, #27272a, #000)')
+                                  : (isActive ? `linear-gradient(to bottom, ${colors.cyan}99, #94a3b8)` : 'linear-gradient(to bottom, #e2e8f0, #94a3b8)'),
+                                border: isBlack ? '1px solid #000' : '1px solid #94a3b8',
+                                borderTop: 'none',
+                                borderRadius: '3px 3px 0 0',
+                                transition: 'background 0.1s',
+                              }} />
+
+                              {/* Right Face */}
+                              <div style={{
+                                position: 'absolute', top: 0, bottom: 0, right: 0, width: `${keyDepth}px`, boxSizing: 'border-box',
+                                transformOrigin: 'right', transform: 'rotateY(-90deg)',
+                                background: isBlack ? '#111' : '#cbd5e1',
+                                border: isBlack ? '1px solid #000' : '1px solid #94a3b8',
+                              }} />
+
+                              {/* Left Face */}
+                              <div style={{
+                                position: 'absolute', top: 0, bottom: 0, left: 0, width: `${keyDepth}px`, boxSizing: 'border-box',
+                                transformOrigin: 'left', transform: 'rotateY(90deg)',
+                                background: isBlack ? '#111' : '#f1f5f9',
+                                border: isBlack ? '1px solid #000' : '1px solid #94a3b8',
+                              }} />
+
+                              {/* Cast Shadow */}
+                              <div style={{
+                                position: 'absolute', top: '10%', bottom: '-15px', left: '-5%', right: '-5%',
+                                background: isActive ? `${colors.cyan}` : '#000',
+                                filter: 'blur(8px)',
+                                transform: `translateZ(${isBlack ? 16 : -2}px)`,
+                                opacity: isActive ? 0.5 : (isBlack ? 0.7 : 0.3),
+                                transition: 'opacity 0.1s, background 0.1s',
+                                pointerEvents: 'none',
+                              }} />
+
+                              {/* Note tooltip (floating) */}
+                              {isActive && activeEvent && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  style={{
+                                    position: 'absolute', top: '-75px', left: '50%', 
+                                    transform: 'translateX(-50%) translateZ(40px) rotateX(-14deg)', 
+                                    background: 'rgba(15,23,42,0.95)', color: 'white',
+                                    padding: '6px 12px', borderRadius: '8px', fontSize: '0.65rem',
+                                    whiteSpace: 'nowrap', textAlign: 'center', lineHeight: '1.4',
+                                    border: `1px solid ${colors.cyan}`,
+                                    boxShadow: `0 8px 16px rgba(0,0,0,0.6), 0 0 15px ${colors.cyan}66`,
+                                    pointerEvents: 'none',
+                                    zIndex: 20,
+                                  }}
+                                >
+                                  <div style={{ fontWeight: 700, color: colors.cyan, fontSize: '0.75rem', marginBottom: '2px' }}>
+                                    {activeEvent.swara || note} <span style={{ color: '#fff' }}>· {activeEvent.noteName || ''}</span>
+                                  </div>
+                                  <div style={{ color: '#94a3b8' }}>
+                                    C{activeEvent.controllerId || '?'} · GPIO {activeEvent.gpio ?? '?'}
+                                  </div>
+                                </motion.div>
+                              )}
                             </div>
-                            {/* 3D depth edge (bottom face) */}
-                            <div style={{
-                              position: 'absolute', bottom: '-8px', left: '2px', right: '2px', height: '10px',
-                              borderRadius: '0 0 6px 6px',
-                              background: isActive
-                                ? `linear-gradient(180deg, ${colors.cyan}99, ${colors.cyan}44)`
-                                : isBlack
-                                  ? 'linear-gradient(180deg, #0f172a, #020617)'
-                                  : 'linear-gradient(180deg, rgba(15,23,42,0.8), rgba(2,6,23,0.9))',
-                              transform: 'rotateX(80deg)',
-                              transformOrigin: 'top',
-                            }} />
-                            {/* Note tooltip */}
-                            {isActive && activeEvent && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                style={{
-                                  position: 'absolute', top: '-56px', left: '50%', transform: 'translateX(-50%)',
-                                  background: 'rgba(0,0,0,0.9)', color: 'white',
-                                  padding: '5px 10px', borderRadius: '8px', fontSize: '0.6rem',
-                                  whiteSpace: 'nowrap', textAlign: 'center', lineHeight: '1.4',
-                                  border: `1px solid ${colors.cyan}`,
-                                  boxShadow: `0 4px 12px rgba(0,0,0,0.5), 0 0 8px ${colors.cyan}44`,
-                                }}
-                              >
-                                <div style={{ fontWeight: 700 }}>{activeEvent.swara || note} · {activeEvent.noteName || ''}</div>
-                                <div style={{ color: '#94a3b8' }}>C{activeEvent.controllerId || '?'} · GPIO {activeEvent.gpio ?? '?'}</div>
-                              </motion.div>
-                            )}
-                          </motion.div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 

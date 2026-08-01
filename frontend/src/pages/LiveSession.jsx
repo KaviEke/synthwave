@@ -89,6 +89,11 @@ function LiveSession() {
   const [displayInstrument, setDisplayInstrument] = useState(null);
   const [displayNote, setDisplayNote] = useState(null);
 
+  useEffect(() => {
+    document.title = "Live Session | SynthWave Motion";
+    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
+  }, []);
+
   // Track note playing logic — ALWAYS update display, session only controls recording
   useEffect(() => {
     if (sessionActive && currentNote) {
