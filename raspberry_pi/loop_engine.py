@@ -107,6 +107,12 @@ class LoopEngine:
         # A simpler way is to keep track of the last processed relative time.
         self._last_processed_pos_ms = -1.0
         
+    def _emit_system_event(self, event_type: str, payload: Any = None):
+        try:
+            self.playback_callback(LoopEvent(event_type, "system", 0.0, payload, "system"))
+        except Exception as e:
+            print(f"Error in playback callback (system event): {e}")
+
     def start(self):
         with self._lock:
             if self._thread is not None and self._thread.is_alive():
@@ -134,6 +140,7 @@ class LoopEngine:
             self.overdubbing = False
             for track in self.tracks.values():
                 track.end_take()
+        self._emit_system_event("loop_pause")
             
     def stop(self):
         with self._lock:
@@ -144,6 +151,7 @@ class LoopEngine:
             self._last_processed_pos_ms = -1.0
             for track in self.tracks.values():
                 track.end_take()
+        self._emit_system_event("loop_stop")
             
     def arm_track(self, track_id: str):
         with self._lock:
@@ -191,6 +199,8 @@ class LoopEngine:
         with self._lock:
             if track_id in self.tracks:
                 self.tracks[track_id].set_muted(muted)
+        if muted:
+            self._emit_system_event("loop_mute", {"track": track_id})
                 
     def solo_track(self, track_id: str, solo: bool):
         with self._lock:
@@ -201,6 +211,7 @@ class LoopEngine:
         with self._lock:
             if track_id in self.tracks:
                 self.tracks[track_id].clear()
+        self._emit_system_event("loop_clear", {"track": track_id})
                 
     def undo_track(self, track_id: str):
         with self._lock:
@@ -211,6 +222,7 @@ class LoopEngine:
         with self._lock:
             for track in self.tracks.values():
                 track.clear()
+        self._emit_system_event("loop_clear_all")
                 
     def get_state(self) -> Dict[str, Any]:
         with self._lock:
@@ -232,6 +244,8 @@ class LoopEngine:
                 now_ns = time.monotonic_ns()
                 elapsed_ms = (now_ns - self._start_time_ns) / 1_000_000.0
                 
+                events_to_fire = []
+                
                 # Wrap at loop boundary
                 if elapsed_ms >= self.loopLengthMs:
                     # Loop wrapped
@@ -245,6 +259,8 @@ class LoopEngine:
                         self.overdubbing = True
                         for track in self.tracks.values():
                             track.end_take()
+                            
+                    events_to_fire.append(LoopEvent("loop_wrap", "system", 0.0, None, "system"))
                 
                 self.currentPositionMs = elapsed_ms
                 
@@ -253,8 +269,6 @@ class LoopEngine:
                 
                 # Check for solo tracks
                 any_solo = any(t.solo for t in self.tracks.values())
-                
-                events_to_fire = []
                 for track in self.tracks.values():
                     if track.muted and not track.solo:
                         continue
