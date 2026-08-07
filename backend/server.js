@@ -152,6 +152,22 @@ io.on('connection', (socket) => {
     io.to('web-clients').emit('command_result', data);
   });
 
+  socket.on('loop_state', (data) => {
+    io.to('web-clients').emit('loop_state', data);
+  });
+
+  socket.on('loop_track_state', (data) => {
+    io.to('web-clients').emit('loop_track_state', data);
+  });
+
+  socket.on('loop_position', (data) => {
+    io.to('web-clients').emit('loop_position', data);
+  });
+
+  socket.on('loop_error', (data) => {
+    io.to('web-clients').emit('loop_error', data);
+  });
+
   // --- EVENTS FROM BROWSER (Send to hardware-devices) ---
   socket.on('hardware_command', (data) => {
     if (socket.data.role === 'browser') {

@@ -27,6 +27,7 @@ class CloudBridge:
         # Rate limiting trackers
         self.last_meend_time = 0.0
         self.last_sensor_time = 0.0
+        self.last_loop_position_time = 0.0
         self.last_heartbeats = {}
         self.last_battery = {}
         
@@ -138,6 +139,45 @@ class CloudBridge:
                 self.last_heartbeats[device_id] = now
             except Exception:
                 pass
+
+    def emit_loop_state(self, state):
+        if not self.connected or not state:
+            return
+        try:
+            self.sio.emit('loop_state', state)
+        except Exception:
+            pass
+
+    def emit_loop_track_state(self, track_state):
+        if not self.connected or not track_state:
+            return
+        try:
+            self.sio.emit('loop_track_state', track_state)
+        except Exception:
+            pass
+
+    def emit_loop_position(self, position):
+        if not self.connected or not position:
+            return
+            
+        now = time.time()
+        # Max ~10 updates per second (100ms)
+        if now - self.last_loop_position_time < 0.1:
+            return
+            
+        self.last_loop_position_time = now
+        try:
+            self.sio.emit('loop_position', position)
+        except Exception:
+            pass
+
+    def emit_loop_error(self, error):
+        if not self.connected or not error:
+            return
+        try:
+            self.sio.emit('loop_error', error)
+        except Exception:
+            pass
 
     def emit_command_result(self, command_id, success, cmd_type, message):
         if not self.connected or not command_id:

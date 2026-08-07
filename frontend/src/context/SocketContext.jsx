@@ -84,6 +84,17 @@ export const SocketProvider = ({ children }) => {
   // Track current note for backward compatibility
   const [currentNote, setCurrentNote] = useState(null);
 
+  // Loop Engine State
+  const [loopState, setLoopState] = useState(null);
+  const [loopTracks, setLoopTracks] = useState({
+    'drum-track': null,
+    'piano-track': null,
+    'violin-track': null
+  });
+  const [loopPosition, setLoopPosition] = useState(null);
+  const [loopError, setLoopError] = useState(null);
+  const [lastLoopCommandResult, setLastLoopCommandResult] = useState(null);
+
   // Assemble hardwareState for backward compatibility with Dashboard/LiveSession
   const hardwareState = {
     deviceStatus: deviceStatuses,
@@ -310,18 +321,36 @@ export const SocketProvider = ({ children }) => {
       handlePerformanceEvent(event);
     };
 
+    const onLoopState = (data) => setLoopState(data);
+    const onLoopTrackState = (data) => {
+      if (data && data.trackId) {
+        setLoopTracks(prev => ({ ...prev, [data.trackId]: data }));
+      }
+    };
+    const onLoopPosition = (data) => setLoopPosition(data);
+    const onLoopError = (data) => setLoopError(data);
+    const onCommandResult = (data) => {
+      if (data && data.type && data.type.startsWith('loop_')) {
+        setLastLoopCommandResult(data);
+      }
+    };
+
     newSocket.on('connect', onConnect);
     newSocket.on('connect_error', onConnectError);
     newSocket.on('disconnect', onDisconnect);
     newSocket.onAny(onAny);
     newSocket.on('device_status', onDeviceStatus);
     newSocket.on('performance_event', onPerformanceEvent);
+    newSocket.on('loop_state', onLoopState);
+    newSocket.on('loop_track_state', onLoopTrackState);
+    newSocket.on('loop_position', onLoopPosition);
+    newSocket.on('loop_error', onLoopError);
+    newSocket.on('command_result', onCommandResult);
 
     // Keep these listeners for forward compatibility
     newSocket.on('device_snapshot', () => {});
     newSocket.on('sensor_frame', () => {});
     newSocket.on('session_status', () => {});
-    newSocket.on('command_result', () => {});
 
     return () => {
       newSocket.off('connect', onConnect);
@@ -330,10 +359,14 @@ export const SocketProvider = ({ children }) => {
       newSocket.offAny(onAny);
       newSocket.off('device_status', onDeviceStatus);
       newSocket.off('performance_event', onPerformanceEvent);
+      newSocket.off('loop_state', onLoopState);
+      newSocket.off('loop_track_state', onLoopTrackState);
+      newSocket.off('loop_position', onLoopPosition);
+      newSocket.off('loop_error', onLoopError);
+      newSocket.off('command_result', onCommandResult);
       newSocket.off('device_snapshot');
       newSocket.off('sensor_frame');
       newSocket.off('session_status');
-      newSocket.off('command_result');
       newSocket.disconnect();
     };
   }, [token, handlePerformanceEvent]);
@@ -342,6 +375,17 @@ export const SocketProvider = ({ children }) => {
   const sendHardwareCommand = useCallback((command, data) => {
     if (socket) {
       socket.emit('hardware_command', { command, ...data });
+    }
+  }, [socket]);
+
+  const sendLoopCommand = useCallback((commandId, type, payload = {}) => {
+    if (socket) {
+      socket.emit('hardware_command', {
+        commandId,
+        type,
+        payload,
+        timestamp: new Date().toISOString()
+      });
     }
   }, [socket]);
 
@@ -363,8 +407,14 @@ export const SocketProvider = ({ children }) => {
       meendState,
       deviceStatus: deviceStatuses,
       sendHardwareCommand,
+      sendLoopCommand,
       emitModeChange,
       lastEvent,
+      loopState,
+      loopTracks,
+      loopPosition,
+      loopError,
+      lastLoopCommandResult,
     }}>
       {children}
     </SocketContext.Provider>

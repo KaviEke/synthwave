@@ -13,6 +13,7 @@ import GameDrum from './pages/GameDrum';
 import Discover from './pages/Discover';
 import SupportUs from './pages/SupportUs';
 import Premium from './pages/Premium';
+import LoopStudio from './pages/LoopStudio';
 import VocalTuner from './pages/VocalTuner';
 import TutorialSelect from './pages/TutorialSelect';
 import TutorialDrum from './pages/TutorialDrum';
@@ -86,6 +87,7 @@ const Navigation = () => {
           <>
             <Link to="/live">Live Session</Link>
             <Link to="/tutorial">Tutorial</Link>
+            <Link to="/loop-studio">Loop Studio</Link>
             <Link to="/dashboard">Dashboard</Link>
             <a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>Logout</a>
           </>
@@ -118,6 +120,7 @@ function App() {
               {/* Protected Routes */}
               <Route path="/live" element={<PrivateRoute><LiveSession /></PrivateRoute>} />
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/loop-studio" element={<PrivateRoute><LoopStudio /></PrivateRoute>} />
               <Route path="/game/piano" element={<PrivateRoute><GamePiano /></PrivateRoute>} />
               <Route path="/game/violin" element={<PrivateRoute><GameViolin /></PrivateRoute>} />
               <Route path="/game/drum" element={<PrivateRoute><GameDrum /></PrivateRoute>} />
