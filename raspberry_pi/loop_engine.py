@@ -71,6 +71,19 @@ class LoopTrack:
         
     def set_volume(self, volume: int):
         self.volume = max(0, min(100, volume))
+        
+    def get_state(self) -> Dict[str, Any]:
+        return {
+            "trackId": self.id,
+            "instrument": self.instrument,
+            "armed": self.armed,
+            "recording": self.recording,
+            "muted": self.muted,
+            "solo": self.solo,
+            "volume": self.volume,
+            "eventCount": len(self.events),
+            "hasRecording": len(self.events) > 0 or len(self._takes) > 0
+        }
 
 class LoopEngine:
     def __init__(self, playback_callback: Callable[[LoopEvent], None]):
@@ -223,15 +236,67 @@ class LoopEngine:
             for track in self.tracks.values():
                 track.clear()
         self._emit_system_event("loop_clear_all")
+        
+    def set_bpm(self, bpm: int):
+        with self._lock:
+            if not self.playing and not self.recording:
+                self.bpm = max(40, min(220, bpm))
+                self.loopLengthMs = (60000.0 / self.bpm) * self.beatsPerBar * self.bars
+                
+    def set_bars(self, bars: int):
+        with self._lock:
+            if not self.playing and not self.recording:
+                self.bars = bars
+                self.loopLengthMs = (60000.0 / self.bpm) * self.beatsPerBar * self.bars
+                
+    def set_count_in(self, count_in: int):
+        with self._lock:
+            if not self.playing and not self.recording:
+                self.countInBars = count_in
+                
+    def set_quantize(self, quantize: str):
+        with self._lock:
+            if not self.playing and not self.recording:
+                self.quantize = quantize
+                
+    def set_track_volume(self, track_id: str, volume: int):
+        with self._lock:
+            if track_id in self.tracks:
+                self.tracks[track_id].set_volume(volume)
+                
+    def get_track_state(self, track_id: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            if track_id in self.tracks:
+                return self.tracks[track_id].get_state()
+            return None
                 
     def get_state(self) -> Dict[str, Any]:
         with self._lock:
+            ms_per_beat = 60000.0 / self.bpm
+            total_beats = self.currentPositionMs / ms_per_beat
+            
+            # Use 1-based indexing for beats and bars for UI
+            current_beat = int(total_beats % self.beatsPerBar) + 1
+            current_bar = int(total_beats / self.beatsPerBar) + 1
+            
+            # Find the armed track
+            armed_track_id = next((t_id for t_id, t in self.tracks.items() if t.armed), None)
+            
             return {
                 "playing": self.playing,
                 "recording": self.recording,
+                "overdubbing": self.overdubbing,
+                "armedTrackId": armed_track_id,
+                "bpm": self.bpm,
+                "beatsPerBar": self.beatsPerBar,
+                "bars": self.bars,
+                "countInBars": self.countInBars,
+                "quantize": self.quantize,
+                "currentBeat": current_beat,
+                "currentBar": current_bar,
                 "currentPositionMs": self.currentPositionMs,
                 "loopLengthMs": self.loopLengthMs,
-                "bpm": self.bpm
+                "timestamp": int(time.time() * 1000)
             }
             
     def _scheduler_loop(self):

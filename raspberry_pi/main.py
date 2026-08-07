@@ -393,8 +393,9 @@ def process_commands():
     while not command_queue.empty():
         try:
             cmd_data = command_queue.get_nowait()
-            cmd_name = cmd_data.get('command')
+            cmd_name = cmd_data.get('type', cmd_data.get('command'))
             cmd_id = cmd_data.get('commandId')
+            payload = cmd_data.get('payload', {})
             
             if cmd_name == 'set_mode':
                 requested_mode = int(cmd_data.get("mode", 0))
@@ -430,6 +431,35 @@ def process_commands():
                 stop_all_notes()
                 reset_violin_state()
                 bridge.emit_command_result(cmd_id, True, 'reset_controllers', 'Controllers reset')
+                
+            elif cmd_name and cmd_name.startswith('loop_'):
+                if cmd_name == 'loop_set_bpm': loop_engine.set_bpm(payload.get('bpm', 120))
+                elif cmd_name == 'loop_set_bars': loop_engine.set_bars(payload.get('bars', 4))
+                elif cmd_name == 'loop_set_count_in': loop_engine.set_count_in(payload.get('countInBars', 1))
+                elif cmd_name == 'loop_set_quantize': loop_engine.set_quantize(payload.get('quantize', 'off'))
+                elif cmd_name == 'loop_arm_track': loop_engine.arm_track(payload.get('trackId', ''))
+                elif cmd_name == 'loop_start_recording': loop_engine.start_recording()
+                elif cmd_name == 'loop_stop_recording': loop_engine.stop_recording()
+                elif cmd_name == 'loop_play': loop_engine.play()
+                elif cmd_name == 'loop_pause': loop_engine.pause()
+                elif cmd_name == 'loop_stop': loop_engine.stop()
+                elif cmd_name == 'loop_mute_track': loop_engine.mute_track(payload.get('trackId', ''), payload.get('muted', True))
+                elif cmd_name == 'loop_solo_track': loop_engine.solo_track(payload.get('trackId', ''), payload.get('solo', True))
+                elif cmd_name == 'loop_set_track_volume': loop_engine.set_track_volume(payload.get('trackId', ''), payload.get('volume', 100))
+                elif cmd_name == 'loop_clear_track': loop_engine.clear_track(payload.get('trackId', ''))
+                elif cmd_name == 'loop_undo_track': loop_engine.undo_track(payload.get('trackId', ''))
+                elif cmd_name == 'loop_clear_all': loop_engine.clear_all()
+                elif cmd_name == 'loop_get_state': pass # Just forces an emit below
+                
+                # Emit updated states back to the client
+                bridge.emit_loop_state(loop_engine.get_state())
+                if payload.get('trackId'):
+                    bridge.emit_loop_track_state(loop_engine.get_track_state(payload.get('trackId')))
+                else:
+                    for t_id in loop_engine.tracks:
+                        bridge.emit_loop_track_state(loop_engine.get_track_state(t_id))
+                
+                bridge.emit_command_result(cmd_id, True, cmd_name, f'Processed {cmd_name}')
                 
             else:
                 bridge.emit_command_result(cmd_id, False, 'unknown', f'Unknown command {cmd_name}')
@@ -1480,6 +1510,16 @@ def main():
     print("  String 4 (Tara Sa):   Sa Ri Ga Ma -> C5 D5 E5 F5")
 
     loop_engine.start()
+
+    # Start loop engine position thread
+    def position_emitter():
+        while True:
+            if loop_engine.playing or loop_engine.recording:
+                bridge.emit_loop_position(loop_engine.get_state())
+            time.sleep(0.05)
+            
+    threading.Thread(target=position_emitter, daemon=True).start()
+
     threading.Thread(target=vocal_engine_thread, daemon=True).start()
     threading.Thread(target=monitor_controllers, daemon=True).start()
     threading.Thread(target=usb_kick_thread, daemon=True).start()
