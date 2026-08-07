@@ -15,7 +15,18 @@ from loop_engine import LoopEngine
 # ======================================================
 loop_engine = None
 
+def stop_all_loop_piano_notes():
+    with notes_lock:
+        if 'active_loop_notes_piano' in globals():
+            for n in list(active_loop_notes_piano):
+                fs.noteoff(CH_LOOP_PIANO, n)
+                active_loop_notes_piano.discard(n)
+
 def handle_loop_playback(event):
+    if event.instrument == "system" and event.type in ["loop_wrap", "loop_stop", "loop_pause", "loop_clear", "loop_clear_all", "loop_mute"]:
+        stop_all_loop_piano_notes()
+        return
+
     if event.type == "drum_hit" and event.instrument == "drum":
         if not hasattr(event, 'payload') or not event.payload:
             return
@@ -42,6 +53,56 @@ def handle_loop_playback(event):
                 deviceId=deviceId,
                 gpio=gpio
             ))
+            
+    elif event.instrument == "piano":
+        if not hasattr(event, 'payload') or not event.payload:
+            return
+        payload = event.payload
+        midi_note = payload.get("midiNote")
+        if midi_note is None:
+            return
+            
+        controllerId = payload.get("controllerId")
+        deviceId = payload.get("deviceId")
+        
+        with notes_lock:
+            if event.type == "note_on":
+                vel = payload.get("velocity", 120)
+                gpio = payload.get("gpio")
+                fs.noteon(CH_LOOP_PIANO, midi_note, vel)
+                active_loop_notes_piano.add(midi_note)
+                
+                bridge.emit_performance_event('note_on', make_event(
+                    'note_on',
+                    instrument='piano',
+                    active=True,
+                    midiNote=midi_note,
+                    baseMidiNote=payload.get("baseMidiNote"),
+                    noteName=get_note_name(midi_note),
+                    swara=get_swara(payload.get("baseMidiNote")),
+                    register=payload.get("register"),
+                    velocity=vel,
+                    source='loop',
+                    controllerId=controllerId,
+                    deviceId=deviceId,
+                    gpio=gpio,
+                ))
+                
+            elif event.type == "note_off":
+                if midi_note in active_loop_notes_piano:
+                    fs.noteoff(CH_LOOP_PIANO, midi_note)
+                    active_loop_notes_piano.discard(midi_note)
+                    
+                    bridge.emit_performance_event('note_off', make_event(
+                        'note_off',
+                        instrument='piano',
+                        active=False,
+                        midiNote=midi_note,
+                        noteName=get_note_name(midi_note),
+                        source='loop',
+                        controllerId=controllerId,
+                        deviceId=deviceId,
+                    ))
 
 loop_engine = LoopEngine(playback_callback=handle_loop_playback)
 
@@ -169,11 +230,14 @@ sfid = fs.sfload(SF2_PATH)
 
 CH_PIANO = 0
 CH_VIOLIN = 1
+CH_LOOP_PIANO = 2
 
 fs.program_select(CH_PIANO, sfid, 0, 0)
 fs.program_select(CH_VIOLIN, sfid, 0, 40)
+fs.program_select(CH_LOOP_PIANO, sfid, 0, 0)
 
 active_notes_piano = set()
+active_loop_notes_piano = set()
 active_notes_violin = set()
 notes_lock = threading.RLock()
 
@@ -843,7 +907,19 @@ def handle_packet(message: str, addr):
         elif subcmd == "MUTE": loop_engine.mute_track("drum-track", True)
         elif subcmd == "UNMUTE": loop_engine.mute_track("drum-track", False)
         elif subcmd == "CLEAR": loop_engine.clear_track("drum-track")
-        elif subcmd == "STATE": print(f"[LOOP] {loop_engine.get_state()}")
+        elif subcmd == "ARM_PIANO": loop_engine.arm_track("piano-track")
+        elif subcmd == "MUTE_PIANO": loop_engine.mute_track("piano-track", True)
+        elif subcmd == "UNMUTE_PIANO": loop_engine.mute_track("piano-track", False)
+        elif subcmd == "SOLO_PIANO": loop_engine.solo_track("piano-track", True)
+        elif subcmd == "UNSOLO_PIANO": loop_engine.solo_track("piano-track", False)
+        elif subcmd == "SOLO_DRUM": loop_engine.solo_track("drum-track", True)
+        elif subcmd == "UNSOLO_DRUM": loop_engine.solo_track("drum-track", False)
+        elif subcmd == "CLEAR_PIANO": loop_engine.clear_track("piano-track")
+        elif subcmd == "CLEAR_ALL": loop_engine.clear_all()
+        elif subcmd == "STATE": 
+            print(f"[LOOP] {loop_engine.get_state()}")
+            print(f"[LOOP] Piano Events: {len(loop_engine.tracks['piano-track'].events)}")
+            print(f"[LOOP] Active loop piano notes: {active_loop_notes_piano}")
         return
 
     if cmd == "HELLO" and len(parts) == 2:
@@ -1047,6 +1123,7 @@ def handle_packet(message: str, addr):
                         f"base={note} actual={actual_note} "
                         f"register={piano_register_name(piano_register_offset)}"
                     )
+                    register_name = get_register_name(piano_register_offset)
                     bridge.emit_performance_event('note_on', make_event(
                         'note_on',
                         instrument='piano',
@@ -1055,13 +1132,25 @@ def handle_packet(message: str, addr):
                         baseMidiNote=note,
                         noteName=get_note_name(actual_note),
                         swara=get_swara(note),
-                        register=get_register_name(piano_register_offset),
+                        register=register_name,
                         velocity=vel,
                         controllerId=device_id,
                         deviceId=f'controller-{device_id}',
                         gpio=get_piano_gpio(device_id, note),
                         buttonIndex=get_piano_button_index(device_id, note),
                     ))
+                    try:
+                        loop_engine.record_event("note_on", "piano", {
+                            "midiNote": actual_note,
+                            "baseMidiNote": note,
+                            "velocity": vel,
+                            "register": register_name,
+                            "controllerId": device_id,
+                            "deviceId": f'controller-{device_id}',
+                            "gpio": get_piano_gpio(device_id, note)
+                        }, "hardware")
+                    except Exception:
+                        pass
 
                 elif actual_mode == 1:
                     fs.noteon(CH_VIOLIN, note, vel)
@@ -1127,6 +1216,14 @@ def handle_packet(message: str, addr):
                         gpio=get_piano_gpio(device_id, note),
                         buttonIndex=get_piano_button_index(device_id, note),
                     ))
+                    try:
+                        loop_engine.record_event("note_off", "piano", {
+                            "midiNote": actual_note,
+                            "controllerId": device_id,
+                            "deviceId": f'controller-{device_id}',
+                        }, "hardware")
+                    except Exception:
+                        pass
                 elif actual_mode == 1:
                     fs.noteoff(CH_VIOLIN, note)
                     active_notes_violin.discard(note)
