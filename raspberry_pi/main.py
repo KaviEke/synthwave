@@ -8,6 +8,42 @@ import queue
 import uuid
 from datetime import datetime, timezone
 from cloud_bridge import CloudBridge
+from loop_engine import LoopEngine
+
+# ======================================================
+#             LOOP ENGINE INITIALIZATION
+# ======================================================
+loop_engine = None
+
+def handle_loop_playback(event):
+    if event.type == "drum_hit" and event.instrument == "drum":
+        if not hasattr(event, 'payload') or not event.payload:
+            return
+        payload = event.payload
+        sound = payload.get("drum")
+        velocity = payload.get("velocity", 120)
+        controllerId = payload.get("controllerId")
+        deviceId = payload.get("deviceId")
+        gpio = payload.get("gpio")
+
+        if sound:
+            # 4. Call existing drum playback function
+            try_play_drum(sound)
+            
+            # 5 & 6. Mark the visual/cloud event as: source: "loop" and emit
+            bridge.emit_performance_event('drum_hit', make_event(
+                'drum_hit',
+                instrument='drum',
+                active=True,
+                drum=sound,
+                velocity=velocity,
+                source='loop',
+                controllerId=controllerId,
+                deviceId=deviceId,
+                gpio=gpio
+            ))
+
+loop_engine = LoopEngine(playback_callback=handle_loop_playback)
 
 # ======================================================
 #             WEB DASHBOARD CONNECTION
@@ -747,8 +783,14 @@ def handle_usb_kick_line(line: str):
         m = current_mode
 
     if m == 2:
+        before = last_play.get("KICK", 0)
         try_play_drum("KICK")
         print(f"[USB KICK] DRUM KICK vel={vel}")
+        if last_play.get("KICK", 0) > before:
+            try:
+                loop_engine.record_event("drum_hit", "drum", {"drum": "KICK", "velocity": vel}, "hardware")
+            except Exception:
+                pass
 
 def usb_kick_thread():
     global kick_connected
@@ -789,6 +831,20 @@ def handle_packet(message: str, addr):
         return
 
     cmd = parts[0].upper()
+
+    if cmd == "LOOP" and len(parts) >= 2:
+        subcmd = parts[1].upper()
+        if subcmd == "ARM": loop_engine.arm_track("drum-track")
+        elif subcmd == "REC_START": loop_engine.start_recording()
+        elif subcmd == "REC_STOP": loop_engine.stop_recording()
+        elif subcmd == "PLAY": loop_engine.play()
+        elif subcmd == "PAUSE": loop_engine.pause()
+        elif subcmd == "STOP": loop_engine.stop()
+        elif subcmd == "MUTE": loop_engine.mute_track("drum-track", True)
+        elif subcmd == "UNMUTE": loop_engine.mute_track("drum-track", False)
+        elif subcmd == "CLEAR": loop_engine.clear_track("drum-track")
+        elif subcmd == "STATE": print(f"[LOOP] {loop_engine.get_state()}")
+        return
 
     if cmd == "HELLO" and len(parts) == 2:
         try:
@@ -1110,8 +1166,10 @@ def handle_packet(message: str, addr):
                 m = current_mode
 
             if m == 2:
+                before = last_play.get(sound, 0)
                 try_play_drum(sound)
                 print(f"[CTRL {device_id}] DRUM {sound}")
+                gpio = get_drum_gpio(device_id, sound)
                 bridge.emit_performance_event('drum_hit', make_event(
                     'drum_hit',
                     instrument='drum',
@@ -1120,8 +1178,19 @@ def handle_packet(message: str, addr):
                     velocity=hit_vel,
                     controllerId=device_id,
                     deviceId=f'controller-{device_id}',
-                    gpio=get_drum_gpio(device_id, sound),
+                    gpio=gpio,
                 ))
+                if last_play.get(sound, 0) > before:
+                    try:
+                        loop_engine.record_event("drum_hit", "drum", {
+                            "drum": sound,
+                            "velocity": hit_vel,
+                            "controllerId": device_id,
+                            "deviceId": f'controller-{device_id}',
+                            "gpio": gpio
+                        }, "hardware")
+                    except Exception:
+                        pass
         except Exception as e:
             print("HIT parse error:", e)
         return
@@ -1168,6 +1237,7 @@ def main():
     print("  String 3 (Pa):        Pa Dha Ni Sa -> G4 A4 B4 C5")
     print("  String 4 (Tara Sa):   Sa Ri Ga Ma -> C5 D5 E5 F5")
 
+    loop_engine.start()
     threading.Thread(target=vocal_engine_thread, daemon=True).start()
     threading.Thread(target=monitor_controllers, daemon=True).start()
     threading.Thread(target=usb_kick_thread, daemon=True).start()
@@ -1193,6 +1263,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        loop_engine.shutdown()
         close_kick_serial()
         stop_all_notes()
         fs.delete()
