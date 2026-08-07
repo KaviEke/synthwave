@@ -113,9 +113,9 @@ function Home() {
             {/* Developer 3 */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '300px' }}>
               <motion.div whileHover={{ scale: 1.05 }} style={{ width: '180px', height: '180px', borderRadius: '50%', overflow: 'hidden', marginBottom: '1.5rem', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                <img src="/images/idumini.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=400&auto=format&fit=crop"}} alt="Idumini Wathsala" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src="/images/idumini.jpg" onError={(e)=>{e.target.src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=400&auto=format&fit=crop"}} alt="Indumini Wathsala" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </motion.div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>Idumini Wathsala</h3>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', textAlign: 'center' }}>Indumini Wathsala</h3>
               <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', textAlign: 'center' }}>Associate Software, Hardware<br/>& AI Engineer</p>
             </div>
 

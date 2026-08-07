@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import AntigravityBackground from '../components/AntigravityBackground';
+import Background3D from '../components/Background3D';
 
 function Premium() {
   return (
     <div style={{ flex: 1, padding: '4rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-      <AntigravityBackground />
+      <Background3D />
       
       <motion.div 
         style={{ width: '100%', maxWidth: '1000px' }}
@@ -13,7 +13,7 @@ function Premium() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 style={{ fontSize: '3.5rem', marginBottom: '1rem', textAlign: 'center', background: 'linear-gradient(45deg, #f59e0b, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: '900' }}>
+        <h1 style={{ fontSize: '3.5rem', marginBottom: '1rem', textAlign: 'center', background: 'linear-gradient(135deg, #0ea5e9, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: '900' }}>
           Unlock Premium Instruments
         </h1>
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '4rem' }}>
@@ -41,10 +41,10 @@ function Premium() {
           </motion.div>
 
           {/* Premium Tier */}
-          <motion.div style={{ flex: '1 1 300px', maxWidth: '400px', background: 'linear-gradient(180deg, rgba(236,72,153,0.15) 0%, rgba(139,92,246,0.15) 100%)', border: '1px solid #ec4899', borderRadius: '24px', padding: '3rem 2rem', textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px rgba(236,72,153,0.2)' }} whileHover={{ y: -10 }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: '#ec4899', color: 'white', fontSize: '0.8rem', fontWeight: 'bold', padding: '0.5rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Most Popular</div>
+          <motion.div style={{ flex: '1 1 300px', maxWidth: '400px', background: 'linear-gradient(180deg, rgba(14,165,233,0.15) 0%, rgba(139,92,246,0.15) 100%)', border: '1px solid #0ea5e9', borderRadius: '24px', padding: '3rem 2rem', textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 40px rgba(14,165,233,0.2)' }} whileHover={{ y: -10 }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: '#0ea5e9', color: 'white', fontSize: '0.8rem', fontWeight: 'bold', padding: '0.5rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Most Popular</div>
             <h2 style={{ fontSize: '1.5rem', color: 'white', marginTop: '1rem', marginBottom: '0.5rem' }}>Full Kit Access</h2>
-            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#f472b6', marginBottom: '2rem' }}>$49<span style={{fontSize: '1rem', color: 'rgba(255,255,255,0.5)'}}>.99</span></div>
+            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#38bdf8', marginBottom: '2rem' }}>$49<span style={{fontSize: '1rem', color: 'rgba(255,255,255,0.5)'}}>.99</span></div>
             <ul style={{ listStyle: 'none', padding: 0, color: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
               <li>✓ Advanced hardware low-latency</li>
               <li>✓ Pro Session Analytics</li>
@@ -52,7 +52,7 @@ function Premium() {
               <li style={{ color: 'white', fontWeight: 'bold' }}>✓ Grand Piano Extension</li>
               <li style={{ color: 'white', fontWeight: 'bold' }}>✓ Drum Kit Hero Extension</li>
             </ul>
-            <div style={{ display: 'block', background: 'linear-gradient(90deg, #ec4899, #8b5cf6)', color: 'white', padding: '1rem', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 10px 20px rgba(236,72,153,0.4)', transition: 'transform 0.3s' }}>
+            <div style={{ display: 'block', background: 'linear-gradient(90deg, #0ea5e9, #8b5cf6)', color: 'white', padding: '1rem', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 10px 20px rgba(14,165,233,0.4)', transition: 'transform 0.3s' }}>
               Purchase Expansion
             </div>
           </motion.div>
