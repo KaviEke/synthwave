@@ -22,9 +22,19 @@ def stop_all_loop_piano_notes():
                 fs.noteoff(CH_LOOP_PIANO, n)
                 active_loop_notes_piano.discard(n)
 
+def stop_all_loop_violin_notes():
+    with notes_lock:
+        if 'active_loop_notes_violin' in globals():
+            for n in list(active_loop_notes_violin):
+                fs.noteoff(CH_LOOP_VIOLIN, n)
+                active_loop_notes_violin.discard(n)
+        if 'fs' in globals() and 'VIOLIN_PITCH_BEND_CENTER' in globals():
+            fs.pitch_bend(CH_LOOP_VIOLIN, VIOLIN_PITCH_BEND_CENTER)
+
 def handle_loop_playback(event):
     if event.instrument == "system" and event.type in ["loop_wrap", "loop_stop", "loop_pause", "loop_clear", "loop_clear_all", "loop_mute"]:
         stop_all_loop_piano_notes()
+        stop_all_loop_violin_notes()
         return
 
     if event.type == "drum_hit" and event.instrument == "drum":
@@ -103,6 +113,75 @@ def handle_loop_playback(event):
                         controllerId=controllerId,
                         deviceId=deviceId,
                     ))
+
+    elif event.instrument == "violin":
+        if not hasattr(event, 'payload') or not event.payload:
+            return
+        payload = event.payload
+        
+        with notes_lock:
+            if event.type == "note_on":
+                midi_note = payload.get("midiNote")
+                if midi_note is None: return
+                vel = payload.get("velocity", 120)
+                
+                pitch_bend = payload.get("pitchBend", 8192)
+                fs.pitch_bend(CH_LOOP_VIOLIN, pitch_bend)
+                
+                fs.noteon(CH_LOOP_VIOLIN, midi_note, vel)
+                active_loop_notes_violin.add(midi_note)
+                
+                bridge.emit_performance_event('note_on', make_event(
+                    'note_on',
+                    instrument='violin',
+                    active=True,
+                    midiNote=midi_note,
+                    noteName=get_note_name(midi_note),
+                    swara=get_swara(midi_note),
+                    stringIndex=payload.get("stringIndex"),
+                    fingerIndex=payload.get("fingerIndex"),
+                    bowActive=payload.get("bowActive", True),
+                    source='loop',
+                    controllerId=payload.get("controllerId"),
+                ))
+            elif event.type == "note_off":
+                midi_note = payload.get("midiNote")
+                if midi_note is None: return
+                
+                if midi_note in active_loop_notes_violin:
+                    fs.noteoff(CH_LOOP_VIOLIN, midi_note)
+                    active_loop_notes_violin.discard(midi_note)
+                    
+                    bridge.emit_performance_event('note_off', make_event(
+                        'note_off',
+                        instrument='violin',
+                        active=False,
+                        midiNote=midi_note,
+                        noteName=get_note_name(midi_note),
+                        swara=get_swara(midi_note),
+                        source='loop',
+                        controllerId=payload.get("controllerId"),
+                    ))
+            elif event.type == "bow_state":
+                bridge.emit_performance_event('bow_state', make_event(
+                    'bow_state',
+                    instrument='violin',
+                    bowActive=payload.get("bowActive"),
+                    stringIndex=payload.get("stringIndex"),
+                    active=payload.get("bowActive"),
+                    source='loop',
+                    controllerId=payload.get("controllerId"),
+                ))
+            elif event.type == "meend_state":
+                pitch_bend = payload.get("pitchBend", 8192)
+                fs.pitch_bend(CH_LOOP_VIOLIN, pitch_bend)
+                bridge.emit_performance_event('meend_state', make_event(
+                    'meend_state',
+                    instrument='violin',
+                    meend=payload.get("meend", 0),
+                    source='loop',
+                    controllerId=payload.get("controllerId"),
+                ))
 
 loop_engine = LoopEngine(playback_callback=handle_loop_playback)
 
@@ -231,14 +310,17 @@ sfid = fs.sfload(SF2_PATH)
 CH_PIANO = 0
 CH_VIOLIN = 1
 CH_LOOP_PIANO = 2
+CH_LOOP_VIOLIN = 3
 
 fs.program_select(CH_PIANO, sfid, 0, 0)
 fs.program_select(CH_VIOLIN, sfid, 0, 40)
 fs.program_select(CH_LOOP_PIANO, sfid, 0, 0)
+fs.program_select(CH_LOOP_VIOLIN, sfid, 0, 40)
 
 active_notes_piano = set()
 active_loop_notes_piano = set()
 active_notes_violin = set()
+active_loop_notes_violin = set()
 notes_lock = threading.RLock()
 
 # ======================================================
@@ -543,6 +625,7 @@ def configure_violin_pitch_bend():
     """Configure the violin MIDI channel for a +/- 2 semitone bend range."""
     try:
         fs.pitch_wheel_sens(CH_VIOLIN, int(VIOLIN_PITCH_BEND_RANGE_SEMITONES))
+        fs.pitch_wheel_sens(CH_LOOP_VIOLIN, int(VIOLIN_PITCH_BEND_RANGE_SEMITONES))
         print("[VIOLIN] Pitch bend range configured using pitch_wheel_sens")
     except Exception:
         # MIDI RPN 0,0 = Pitch Bend Sensitivity.
@@ -554,9 +637,17 @@ def configure_violin_pitch_bend():
         fs.cc(CH_VIOLIN, 38, 0)
         fs.cc(CH_VIOLIN, 101, 127)
         fs.cc(CH_VIOLIN, 100, 127)
+        
+        fs.cc(CH_LOOP_VIOLIN, 101, 0)
+        fs.cc(CH_LOOP_VIOLIN, 100, 0)
+        fs.cc(CH_LOOP_VIOLIN, 6, int(VIOLIN_PITCH_BEND_RANGE_SEMITONES))
+        fs.cc(CH_LOOP_VIOLIN, 38, 0)
+        fs.cc(CH_LOOP_VIOLIN, 101, 127)
+        fs.cc(CH_LOOP_VIOLIN, 100, 127)
         print("[VIOLIN] Pitch bend range configured using MIDI RPN fallback")
 
     fs.pitch_bend(CH_VIOLIN, VIOLIN_PITCH_BEND_CENTER)
+    fs.pitch_bend(CH_LOOP_VIOLIN, VIOLIN_PITCH_BEND_CENTER)
 
 
 def calculate_violin_pitch_bend():
@@ -600,6 +691,18 @@ def apply_violin_meend(force=False):
         if force or bend_value != violin_state["last_pitch_bend"]:
             fs.pitch_bend(CH_VIOLIN, bend_value)
             violin_state["last_pitch_bend"] = bend_value
+            
+            now = time.time()
+            if now - violin_state.get("last_recorded_meend_time", 0) > 0.05:
+                try:
+                    loop_engine.record_event("meend_state", "violin", {
+                        "meend": violin_state.get("meend_position", 0),
+                        "pitchBend": bend_value,
+                        "controllerId": 2
+                    }, "hardware")
+                    violin_state["last_recorded_meend_time"] = now
+                except Exception:
+                    pass
 
 
 def refresh_violin_meend_timeout():
@@ -639,6 +742,7 @@ def reset_violin_state():
     violin_state["last_emit_name"] = None
     violin_state["meend_position"] = 0
     violin_state["last_meend_update"] = 0.0
+    violin_state["last_recorded_bow_active"] = None
     apply_violin_meend(force=True)
 
 def set_violin_note(note, label_text=None):
@@ -666,6 +770,15 @@ def set_violin_note(note, label_text=None):
                 controllerId=1,
                 gpio=VIOLIN_STRING_GPIO.get(violin_state.get('string_index')),
             ))
+            try:
+                loop_engine.record_event("note_off", "violin", {
+                    "midiNote": current,
+                    "stringIndex": violin_state.get('string_index'),
+                    "fingerIndex": violin_state.get('finger_index'),
+                    "controllerId": 1
+                }, "hardware")
+            except Exception:
+                pass
 
         violin_state["active_note"] = None
 
@@ -691,6 +804,19 @@ def set_violin_note(note, label_text=None):
                     velocity=120,
                 ))
                 violin_state["last_emit_name"] = label_text
+            try:
+                loop_engine.record_event("note_on", "violin", {
+                    "midiNote": note,
+                    "velocity": 120,
+                    "stringIndex": violin_state.get('string_index'),
+                    "fingerIndex": violin_state.get('finger_index'),
+                    "controllerId": 1,
+                    "bowActive": True,
+                    "meend": violin_state.get("meend_position", 0),
+                    "pitchBend": violin_state.get("last_pitch_bend", 8192)
+                }, "hardware")
+            except Exception:
+                pass
 
         apply_violin_meend(force=True)
 
@@ -915,11 +1041,19 @@ def handle_packet(message: str, addr):
         elif subcmd == "SOLO_DRUM": loop_engine.solo_track("drum-track", True)
         elif subcmd == "UNSOLO_DRUM": loop_engine.solo_track("drum-track", False)
         elif subcmd == "CLEAR_PIANO": loop_engine.clear_track("piano-track")
+        elif subcmd == "ARM_VIOLIN": loop_engine.arm_track("violin-track")
+        elif subcmd == "MUTE_VIOLIN": loop_engine.mute_track("violin-track", True)
+        elif subcmd == "UNMUTE_VIOLIN": loop_engine.mute_track("violin-track", False)
+        elif subcmd == "SOLO_VIOLIN": loop_engine.solo_track("violin-track", True)
+        elif subcmd == "UNSOLO_VIOLIN": loop_engine.solo_track("violin-track", False)
+        elif subcmd == "CLEAR_VIOLIN": loop_engine.clear_track("violin-track")
         elif subcmd == "CLEAR_ALL": loop_engine.clear_all()
         elif subcmd == "STATE": 
             print(f"[LOOP] {loop_engine.get_state()}")
             print(f"[LOOP] Piano Events: {len(loop_engine.tracks['piano-track'].events)}")
+            print(f"[LOOP] Violin Events: {len(loop_engine.tracks['violin-track'].events)}")
             print(f"[LOOP] Active loop piano notes: {active_loop_notes_piano}")
+            print(f"[LOOP] Active loop violin notes: {active_loop_notes_violin}")
         return
 
     if cmd == "HELLO" and len(parts) == 2:
@@ -989,6 +1123,17 @@ def handle_packet(message: str, addr):
             violin_state["bow_active"] = bow_active
             violin_state["string_index"] = string_index
             violin_state["last_bow_update"] = time.time()
+
+            if violin_state.get("last_recorded_bow_active") != bow_active:
+                try:
+                    loop_engine.record_event("bow_state", "violin", {
+                        "bowActive": bow_active,
+                        "stringIndex": string_index,
+                        "controllerId": device_id
+                    }, "hardware")
+                    violin_state["last_recorded_bow_active"] = bow_active
+                except Exception:
+                    pass
 
             bridge.emit_performance_event('bow_state', make_event(
                 'bow_state',
