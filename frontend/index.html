@@ -1,12 +1,19 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      // Apply the saved language before first paint so Sinhala fonts/line-heights don't flash.
+      try { var l = localStorage.getItem('syntronics-lang'); if (l === 'si' || l === 'en') document.documentElement.lang = l; } catch (e) {}
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="SynthWave Motion is an interactive motion-controlled digital musical instrument integrating embedded systems, IoT and real-time web visualization." />
     <meta name="application-name" content="SynthWave Motion" />
     <meta name="theme-color" content="#07111f" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <title>SynthWave Motion | Interactive Digital Instrument</title>
   </head>
   <body>

@@ -2,6 +2,8 @@ import React, { useContext, useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { SocketProvider, SocketContext } from './context/SocketContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import LanguageToggle from './components/LanguageToggle';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -22,7 +24,8 @@ import TutorialViolin from './pages/TutorialViolin';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
-  if (loading) return <div>Loading...</div>;
+  const { t } = useLanguage();
+  if (loading) return <div>{t('common.loading')}</div>;
   return user ? children : <Navigate to="/login" />;
 };
 
@@ -32,6 +35,7 @@ const Navigation = () => {
   const [activeInstrument, setActiveInstrument] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (currentNote && currentNote.instrument) {
@@ -59,52 +63,69 @@ const Navigation = () => {
         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>SYNTRONICS</Link>
         {activeInstrument && (
           <span style={{ marginLeft: '1rem', fontSize: '0.8rem', padding: '0.3rem 0.8rem', background: 'rgba(14,165,233,0.1)', borderRadius: '20px', color: 'var(--primary)', border: '1px solid rgba(14,165,233,0.3)', verticalAlign: 'middle', letterSpacing: '0px' }}>
-            🎵 Active: <span style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{activeInstrument}</span>
+            🎵 {t('nav.active')}: <span style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{activeInstrument}</span>
           </span>
         )}
       </div>
 
-      {/* Mobile Menu Toggle Button */}
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="mobile-toggle"
-        style={{
-          background: 'none',
-          border: 'none',
-          fontSize: '1.8rem',
-          cursor: 'pointer',
-          color: 'var(--text-main)',
-          padding: '4px',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        {isOpen ? '✕' : '☰'}
-      </button>
+      <div className="nav-right">
+        <div className={`nav-links ${isOpen ? 'mobile-open' : ''}`}>
+          {user ? (
+            <>
+              <Link to="/live">{t('nav.liveSession')}</Link>
+              <Link to="/tutorial">{t('nav.tutorial')}</Link>
+              <Link to="/loop-studio">{t('nav.loopStudio')}</Link>
+              <Link to="/dashboard">{t('nav.dashboard')}</Link>
+              <a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>{t('nav.logout')}</a>
+            </>
+          ) : (
+            <>
+              <Link to="/discover">{t('nav.discover')}</Link>
+              <Link to="/support">{t('nav.support')}</Link>
+              <Link to="/premium">{t('nav.premium')}</Link>
+            </>
+          )}
+        </div>
 
-      <div className={`nav-links ${isOpen ? 'mobile-open' : ''}`}>
-        {user ? (
-          <>
-            <Link to="/live">Live Session</Link>
-            <Link to="/tutorial">Tutorial</Link>
-            <Link to="/loop-studio">Loop Studio</Link>
-            <Link to="/dashboard">Dashboard</Link>
-            <a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>Logout</a>
-          </>
-        ) : (
-          <>
-            <Link to="/discover">Discover</Link>
-            <Link to="/support">Support Us</Link>
-            <Link to="/premium">Premium</Link>
-          </>
-        )}
+        {/* Language switcher – visible in the bar on both desktop and mobile */}
+        <LanguageToggle />
+
+        {/* Mobile Menu Toggle Button */}
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="mobile-toggle"
+          aria-label={isOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+          aria-expanded={isOpen}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '1.8rem',
+            cursor: 'pointer',
+            color: 'var(--text-main)',
+            padding: '4px',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          {isOpen ? '✕' : '☰'}
+        </button>
       </div>
     </nav>
   );
 };
 
+const Footer = () => {
+  const { t } = useLanguage();
+  return (
+    <footer style={{ marginTop: 'auto', paddingTop: '4rem', paddingBottom: '1.5rem', width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', position: 'relative', zIndex: 10 }}>
+      <p>&copy; {new Date().getFullYear()} SYNTRONICS. {t('footer.rights')}</p>
+    </footer>
+  );
+};
+
 function App() {
   return (
+    <LanguageProvider>
     <AuthProvider>
       <SocketProvider>
         <Router>
@@ -133,14 +154,12 @@ function App() {
               <Route path="/tutorial/violin/:songId" element={<PrivateRoute><TutorialViolin /></PrivateRoute>} />
             </Routes>
           </div>
-          <footer style={{ marginTop: 'auto', paddingTop: '4rem', paddingBottom: '1.5rem', width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', position: 'relative', zIndex: 10 }}>
-            <p>&copy; {new Date().getFullYear()} SYNTRONICS. All rights reserved.</p>
-
-          </footer>
+          <Footer />
 
         </Router>
       </SocketProvider>
     </AuthProvider>
+    </LanguageProvider>
   );
 }
 

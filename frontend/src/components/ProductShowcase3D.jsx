@@ -2,6 +2,7 @@ import React, { Suspense, useRef, useState, useEffect, useCallback } from 'react
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment, ContactShadows, Clone } from '@react-three/drei';
 import * as THREE from 'three';
+import { useLanguage } from '../context/LanguageContext';
 
 /* ─── 3D Model Component ─── */
 function Model({ url, position = [0, 0, 0], onLoaded, customScale = 1.6 }) {
@@ -101,6 +102,7 @@ function StudioLights() {
 
 /* ─── Loading Spinner Overlay ─── */
 function LoadingOverlay({ visible }) {
+  const { t } = useLanguage();
   return (
     <div
       style={{
@@ -143,7 +145,7 @@ function LoadingOverlay({ visible }) {
           textTransform: 'uppercase',
         }}
       >
-        Loading 3D Model…
+        {t('showcase.loading')}
       </p>
     </div>
   );
@@ -152,6 +154,7 @@ function LoadingOverlay({ visible }) {
 /* ─── Main ProductShowcase3D Component ─── */
 export default function ProductShowcase3D() {
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useLanguage();
   const [isInteracting, setIsInteracting] = useState(false);
   const controlsRef = useRef();
   const interactionTimeout = useRef(null);
@@ -199,7 +202,7 @@ export default function ProductShowcase3D() {
               textTransform: 'uppercase',
             }}
           >
-            Experience The Build
+            {t('showcase.title')}
           </h2>
           <p
             style={{
@@ -210,7 +213,7 @@ export default function ProductShowcase3D() {
               lineHeight: 1.7,
             }}
           >
-            Explore the Synth Wave controller in full 3D. Drag to rotate, scroll to zoom, and see every detail of the craft.
+            {t('showcase.subtitle')}
           </p>
         </div>
 
@@ -313,7 +316,7 @@ export default function ProductShowcase3D() {
               <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" opacity="0.3" />
               <path d="M12 8v8M8 12h8" />
             </svg>
-            Drag to rotate · Scroll to zoom
+            {t('showcase.hint')}
           </div>
         </div>
 
