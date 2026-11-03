@@ -6,8 +6,10 @@ import LoopTrack from '../components/LoopTrack';
 import LoopTimeline from '../components/LoopTimeline';
 import { v4 as uuidv4 } from 'uuid';
 import './LoopStudio.css';
+import { useLanguage } from '../context/LanguageContext';
 
 const LoopStudio = () => {
+  const { tr } = useLanguage();
   const { 
     socket,
     loopState, 
@@ -43,7 +45,7 @@ const LoopStudio = () => {
       });
 
       if (!success) {
-        setErrorMsg(message || 'Command failed');
+        setErrorMsg(message || tr('Command failed'));
         setTimeout(() => setErrorMsg(null), 3000);
       }
     }
@@ -52,7 +54,7 @@ const LoopStudio = () => {
   // Handle errors from the engine
   useEffect(() => {
     if (loopError) {
-      setErrorMsg(loopError.message || 'Loop Engine Error');
+      setErrorMsg(loopError.message || tr('Loop Engine Error'));
       setTimeout(() => setErrorMsg(null), 3000);
     }
   }, [loopError]);
@@ -60,7 +62,7 @@ const LoopStudio = () => {
   const handleCommand = (type, payload = {}) => {
     const isPiOnline = deviceStatus['raspberry-pi-4b']?.active;
     if (!isPiOnline) {
-      setErrorMsg('Raspberry Pi is offline');
+      setErrorMsg(tr('Raspberry Pi is offline'));
       setTimeout(() => setErrorMsg(null), 3000);
       return;
     }
@@ -101,34 +103,34 @@ const LoopStudio = () => {
   });
 
   // Calculate status text
-  let statusText = 'Ready';
+  let statusText = tr('Ready');
   if (loopState?.recording) {
     if (loopState.armedTrackId) {
-      statusText = `Recording ${loopState.armedTrackId.replace('-track', '')}`;
+      statusText = tr('Recording {track}', { track: tr(loopState.armedTrackId.replace('-track', '')) });
     } else {
-      statusText = 'Recording';
+      statusText = tr('Recording');
     }
   } else if (loopState?.playing) {
-    statusText = 'Playing';
+    statusText = tr('Playing');
   } else if (loopState && !loopState.playing && loopState.currentPositionMs > 0) {
-    statusText = 'Paused';
+    statusText = tr('Paused');
   } else if (loopState && !loopState.playing && loopState.currentPositionMs === 0) {
-    statusText = 'Stopped';
+    statusText = tr('Stopped');
   }
 
   return (
     <div className="loop-studio-container">
       <div className="loop-studio-header">
-        <h1>Loop Studio</h1>
+        <h1>{tr("Loop Studio")}</h1>
         <div className="status-badges">
           <span className={`badge ${isSocketConnected ? 'online' : 'offline'}`}>
-            Browser: {isSocketConnected ? 'Connected' : 'Disconnected'}
+            {tr("Browser:")} {isSocketConnected ? tr("Connected") : tr("Disconnected")}
           </span>
           <span className={`badge ${isPiOnline ? 'online' : 'offline'}`}>
-            RPi: {isPiOnline ? 'Online' : 'Offline'}
+            {tr("RPi:")} {isPiOnline ? tr("Online") : tr("Offline")}
           </span>
           <span className={`badge ${loopState?.recording ? 'recording' : 'online'}`}>
-            Status: {statusText}
+            {tr("Status:")} {statusText}
           </span>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { SocketContext } from '../context/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -83,6 +84,7 @@ function buildImpulse(ctx, duration = 2.0, decay = 2.0) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function VocalTuner() {
+  const { tr } = useLanguage();
   const { socket, deviceStatus } = useContext(SocketContext);
 
   // UI state
@@ -479,7 +481,7 @@ export default function VocalTuner() {
 
     } catch (err) {
       console.error(err);
-      setError('Could not access microphone. Make sure your browser has permission.');
+      setError('Could not access microphone. Make sure your browser has permission.'); // translated at render
     }
   }
 
@@ -573,9 +575,9 @@ export default function VocalTuner() {
 
         {/* Scale & Key */}
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
-          <h3 style={{ color: '#c026d3', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem' }}>Scale & Key</h3>
+          <h3 style={{ color: '#c026d3', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem' }}>{tr("Scale & Key")}</h3>
 
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Key</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{tr("Key")}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '4px', marginBottom: '1.2rem' }}>
             {KEYS.map(k => (
               <button key={k} onClick={() => setKey(k)} style={{
@@ -587,64 +589,64 @@ export default function VocalTuner() {
             ))}
           </div>
 
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Scale</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{tr("Scale")}</div>
           <select value={scale} onChange={e => setScale(e.target.value)} style={{
             width: '100%', padding: '0.7rem', background: 'rgba(0,0,0,0.5)', color: 'white',
             border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', marginBottom: '0.6rem'
           }}>
-            {SCALES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {SCALES.map(s => <option key={s.id} value={s.id}>{tr(s.name)}</option>)}
           </select>
           <p style={{ fontSize: '0.76rem', color: '#a855f7', margin: 0 }}>
-            {SCALES.find(s => s.id === scale)?.desc}
+            {tr(SCALES.find(s => s.id === scale)?.desc || '')}
           </p>
         </div>
 
         {/* Pitch & Rhythm FX */}
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
-          <h3 style={{ color: '#c026d3', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem' }}>Autotune Pro</h3>
+          <h3 style={{ color: '#c026d3', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem' }}>{tr("Autotune Pro")}</h3>
           
-          <Slider label="BPM" value={bpm} set={setBpm} min={60} max={200} step={1} unit=" bpm" />
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>Sets the tempo for the stutter effect.</div>
+          <Slider label={tr("BPM")} value={bpm} set={setBpm} min={60} max={200} step={1} unit=" bpm" />
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>{tr("Sets the tempo for the stutter effect.")}</div>
           <div style={{ marginBottom: '1.2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-              <span>Quantize (Stutter)</span><span style={{ color: '#10b981' }}>Hardware Gyro Sync ✨</span>
+              <span>{tr("Quantize (Stutter)")}</span><span style={{ color: '#10b981' }}>{tr("Hardware Gyro Sync ✨")}</span>
             </div>
             <div style={{
               width: '100%', padding: '0.5rem 1rem', background: 'rgba(50,205,50,0.1)', color: '#10b981', 
               border: '1px solid rgba(50,205,50,0.3)', borderRadius: '8px', cursor: 'not-allowed', 
               display: 'flex', justifyContent: 'space-between', fontWeight: 'bold'
             }}>
-              <span>Controller Tilt:</span> <span>{quantize}</span>
+              <span>{tr("Controller Tilt:")}</span> <span>{quantize === 'Off' ? tr('Off') : quantize}</span>
             </div>
           </div>
 
-          <Slider label="Pitch Snap" value={pitchSnap} set={setPitchSnap} />
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>How fast the tuning corrects to the nearest note. Higher = more robotic.</div>
-          <Slider label="Humanize" value={smoothing} set={setSmoothing} />
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>Adds a subtle vibrato/detune effect to make the synth sound more natural.</div>
-          <Slider label="Wet/Dry Mix" value={wetDry} set={setWetDry} />
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>Balances your raw mic (Dry) with the pure tuned synth (Wet).</div>
+          <Slider label={tr("Pitch Snap")} value={pitchSnap} set={setPitchSnap} />
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>{tr("How fast the tuning corrects to the nearest note. Higher = more robotic.")}</div>
+          <Slider label={tr("Humanize")} value={smoothing} set={setSmoothing} />
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>{tr("Adds a subtle vibrato/detune effect to make the synth sound more natural.")}</div>
+          <Slider label={tr("Wet/Dry Mix")} value={wetDry} set={setWetDry} />
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>{tr("Balances your raw mic (Dry) with the pure tuned synth (Wet).")}</div>
         </div>
 
         {/* Spatial Effects */}
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
-          <h3 style={{ color: '#c026d3', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem' }}>Spatial & Output</h3>
-          <Slider label="Reverb" value={reverb} set={setReverb} />
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>Amount of space/echo added to the voice.</div>
-          <Slider label="Grain Size" value={grainSize} set={setGrainSize} min={10} max={1000} step={1} unit="ms" />
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>The length of the delay slices. Shorter creates robotic chorus, longer creates distinct echoes.</div>
-          <Slider label="Feedback/Decay" value={feedback} set={setFeedback} />
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>How many times the echo repeats before fading out.</div>
-          <Slider label="Master Gain" value={gain} set={setGain} min={0} max={3} step={0.1} unit="x" />
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>Final output volume multiplier.</div>
+          <h3 style={{ color: '#c026d3', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem' }}>{tr("Spatial & Output")}</h3>
+          <Slider label={tr("Reverb")} value={reverb} set={setReverb} />
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>{tr("Amount of space/echo added to the voice.")}</div>
+          <Slider label={tr("Grain Size")} value={grainSize} set={setGrainSize} min={10} max={1000} step={1} unit="ms" />
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>{tr("The length of the delay slices. Shorter creates robotic chorus, longer creates distinct echoes.")}</div>
+          <Slider label={tr("Feedback/Decay")} value={feedback} set={setFeedback} />
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>{tr("How many times the echo repeats before fading out.")}</div>
+          <Slider label={tr("Master Gain")} value={gain} set={setGain} min={0} max={3} step={0.1} unit="x" />
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '1.2rem', marginTop: '-0.8rem' }}>{tr("Final output volume multiplier.")}</div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.8rem' }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Monitor 🎧</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{tr("Monitor 🎧")}</span>
             <button onClick={toggleMonitor} style={{
               background: monitoring ? '#10b981' : 'rgba(255,255,255,0.06)',
               border: 'none', padding: '0.35rem 1rem', borderRadius: '20px',
               color: 'white', cursor: 'pointer', fontSize: '0.8rem'
-            }}>{monitoring ? 'ON' : 'OFF'}</button>
+            }}>{monitoring ? tr("ON") : tr("OFF")}</button>
           </div>
         </div>
       </motion.div>
@@ -660,7 +662,7 @@ export default function VocalTuner() {
           ].map(({ label, color }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.4)', padding: '0.4rem 1rem', borderRadius: '50px' }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{label}</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{tr(label)}</span>
             </div>
           ))}
         </div>
@@ -687,12 +689,12 @@ export default function VocalTuner() {
               {note ? (
                 <motion.div key={note} initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.3, opacity: 0 }} transition={{ duration: 0.12 }}>
                   <div style={{ fontSize: '4.5rem', fontWeight: 900, color: '#c026d3', textShadow: '0 0 40px #c026d3aa', lineHeight: 1 }}>{note}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#a855f7', marginTop: '0.5rem', letterSpacing: '3px', textTransform: 'uppercase' }}>Detected</div>
+                  <div style={{ fontSize: '0.72rem', color: '#a855f7', marginTop: '0.5rem', letterSpacing: '3px', textTransform: 'uppercase' }}>{tr("Detected")}</div>
                 </motion.div>
               ) : (
                 <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   <div style={{ fontSize: '2.5rem' }}>🎤</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{isActive ? 'Listening…' : 'Press Start'}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>{isActive ? tr("Listening…") : tr("Press Start")}</div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -702,7 +704,7 @@ export default function VocalTuner() {
         {/* Error */}
         {error && (
           <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid #ef4444', borderRadius: '10px', padding: '0.7rem 1.5rem', color: '#ef4444', fontSize: '0.83rem', maxWidth: '380px', textAlign: 'center' }}>
-            {error}
+            {tr(error)}
           </div>
         )}
 
@@ -717,7 +719,7 @@ export default function VocalTuner() {
               color: 'white', cursor: 'pointer',
               boxShadow: isActive ? 'none' : '0 0 30px #c026d355', letterSpacing: '1px'
             }}>
-            {isActive ? '⏹ Stop Session' : '🎤 Start Singing'}
+            {isActive ? tr("⏹ Stop Session") : tr("🎤 Start Singing")}
           </motion.button>
           
           {isActive && (
@@ -730,7 +732,7 @@ export default function VocalTuner() {
                 color: 'white', cursor: 'pointer',
                 boxShadow: isRecording ? '0 0 20px #ef444488' : 'none'
               }}>
-              {isRecording ? '⏹ Stop Recording' : '🔴 REC'}
+              {isRecording ? tr("⏹ Stop Recording") : tr("🔴 REC")}
             </motion.button>
           )}
         </div>
@@ -738,18 +740,18 @@ export default function VocalTuner() {
         {/* Playback/Download recorded audio */}
         {recordedBlob && !isActive && (
            <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.4)', padding: '1rem 2rem', borderRadius: '15px' }}>
-              <p style={{ color: '#10b981', fontSize: '0.85rem', margin: 0 }}>✅ Session Recorded!</p>
+              <p style={{ color: '#10b981', fontSize: '0.85rem', margin: 0 }}>{tr("✅ Session Recorded!")}</p>
               <audio controls src={URL.createObjectURL(recordedBlob)} style={{ height: '35px', borderRadius: '30px', margin: '0.5rem 0' }}/>
               <a href={URL.createObjectURL(recordedBlob)} download="Syntronics-Vocal-Session.webm" style={{ color: '#c026d3', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 'bold' }}>
-                ⬇ Download Audio File
+                {tr("⬇ Download Audio File")}
               </a>
            </div>
         )}
 
         <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '360px', lineHeight: 1.7 }}>
           {monitoring
-            ? '⚠️ Use headphones to prevent feedback echo.'
-            : 'Click Start → allow mic → sing! Turn Monitor ON to hear effects through your speakers.'}
+            ? tr("⚠️ Use headphones to prevent feedback echo.")
+            : tr("Click Start → allow mic → sing! Turn Monitor ON to hear effects through your speakers.")}
         </p>
       </div>
     </div>

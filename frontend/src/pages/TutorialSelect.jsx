@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { songs } from '../data/songs';
+import { useLanguage } from '../context/LanguageContext';
 
 const instruments = [
   { key: 'piano', label: 'Piano', icon: '🎹', accent: '#0ea5e9', route: 'piano' },
@@ -10,6 +11,7 @@ const instruments = [
 ];
 
 const TutorialSelect = () => {
+  const { tr } = useLanguage();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
 
@@ -38,7 +40,7 @@ const TutorialSelect = () => {
           letterSpacing: '1px',
         }}
       >
-        Interactive Tutorials
+        {tr("Interactive Tutorials")}
       </motion.h1>
       <motion.p
         initial={{ opacity: 0 }}
@@ -51,7 +53,7 @@ const TutorialSelect = () => {
           marginBottom: '2rem',
         }}
       >
-        Choose an instrument and a song to start learning
+        {tr("Choose an instrument and a song to start learning")}
       </motion.p>
 
       {/* Search Bar */}
@@ -76,7 +78,7 @@ const TutorialSelect = () => {
           }}>🔍</span>
           <input
             type="text"
-            placeholder="Search songs..."
+            placeholder={tr("Search songs...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
@@ -155,19 +157,19 @@ const TutorialSelect = () => {
                       fontWeight: 700,
                       color: inst.accent,
                       margin: 0,
-                    }}>{inst.label}</h2>
+                    }}>{tr(inst.label)}</h2>
                     <p style={{
                       fontSize: '0.8rem',
                       color: '#9ca3af',
                       margin: 0,
-                    }}>{availableSongs.length} song{availableSongs.length !== 1 ? 's' : ''} available</p>
+                    }}>{tr(availableSongs.length !== 1 ? '{n} songs available' : '{n} song available', { n: availableSongs.length })}</p>
                   </div>
                 </div>
 
                 {/* Song List */}
                 {availableSongs.length === 0 ? (
                   <p style={{ color: '#6b7280', fontSize: '0.9rem', textAlign: 'center', marginTop: '2rem' }}>
-                    No songs found
+                    {tr("No songs found")}
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -221,7 +223,7 @@ const TutorialSelect = () => {
                             color: '#9ca3af',
                             fontSize: '0.78rem',
                             margin: 0,
-                          }}>{song.artist} · {song.parts[inst.key].notes.length} notes</p>
+                          }}>{tr(song.artist)} · {tr('{n} notes', { n: song.parts[inst.key].notes.length })}</p>
                         </div>
                         <span style={{
                           color: inst.accent,

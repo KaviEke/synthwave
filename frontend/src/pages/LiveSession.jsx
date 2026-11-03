@@ -5,8 +5,10 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-mo
 import axios from 'axios';
 import { API_URL } from '../config';
 import DiagnosticCard from '../components/DiagnosticCard';
+import { useLanguage } from '../context/LanguageContext';
 
 const InteractiveInstrument = ({ instrument }) => {
+  const { tr } = useLanguage();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -34,7 +36,7 @@ const InteractiveInstrument = ({ instrument }) => {
 
   if (!imageSrc) return (
     <div style={{ color: 'var(--text-muted)', fontSize: '1.2rem', textAlign: 'center', marginTop: '2rem' }}>
-      Waiting for instrument notes...
+      {tr("Waiting for instrument notes...")}
     </div>
   );
 
@@ -74,6 +76,7 @@ const InteractiveInstrument = ({ instrument }) => {
 };
 
 function LiveSession() {
+  const { tr, sw, drum, lang } = useLanguage();
   const { hardwareState, currentNote, lastPerformanceEvent } = useContext(SocketContext);
   const { user, token } = useContext(AuthContext);
 
@@ -90,9 +93,9 @@ function LiveSession() {
   const [displayNote, setDisplayNote] = useState(null);
 
   useEffect(() => {
-    document.title = "Live Session | SynthWave Motion";
-    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
-  }, []);
+    document.title = tr("Live Session | SynthWave Motion");
+    return () => { document.title = tr("SynthWave Motion | Interactive Digital Instrument"); };
+  }, [tr]);
 
   // Track note playing logic — ALWAYS update display, session only controls recording
   useEffect(() => {
@@ -134,7 +137,7 @@ function LiveSession() {
         }, {
           headers: { 'x-auth-token': token }
         });
-        alert('Session saved successfully!');
+        alert(tr('Session saved successfully!'));
       } catch (err) {
         console.error('Failed to save session');
       }
@@ -189,17 +192,17 @@ function LiveSession() {
            {/* Pi Status */}
            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: piActive ? '#10b981' : '#ef4444', boxShadow: `0 0 8px ${piActive ? '#10b981' : '#ef4444'}` }} />
-              <span style={{ fontSize: '0.9rem', color: piActive ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>Pi Bridge</span>
+              <span style={{ fontSize: '0.9rem', color: piActive ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>{tr("Pi Bridge")}</span>
            </div>
            {/* C1 Status */}
            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c1Active ? '#0ea5e9' : '#475569', boxShadow: c1Active ? `0 0 8px #0ea5e9` : 'none' }} />
-              <span style={{ fontSize: '0.9rem', color: c1Active ? '#0ea5e9' : '#94a3b8', fontWeight: 'bold' }}>Controller 1</span>
+              <span style={{ fontSize: '0.9rem', color: c1Active ? '#0ea5e9' : '#94a3b8', fontWeight: 'bold' }}>{tr("Controller 1")}</span>
            </div>
            {/* C2 Status */}
            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: c2Active ? '#8b5cf6' : '#475569', boxShadow: c2Active ? `0 0 8px #8b5cf6` : 'none' }} />
-              <span style={{ fontSize: '0.9rem', color: c2Active ? '#8b5cf6' : '#94a3b8', fontWeight: 'bold' }}>Controller 2</span>
+              <span style={{ fontSize: '0.9rem', color: c2Active ? '#8b5cf6' : '#94a3b8', fontWeight: 'bold' }}>{tr("Controller 2")}</span>
            </div>
         </div>
 
@@ -208,7 +211,7 @@ function LiveSession() {
           className={sessionActive ? "btn-secondary" : "btn-primary"}
           style={sessionActive ? { borderColor: '#ef4444', color: '#ef4444' } : {}}
         >
-          {sessionActive ? 'End Session' : 'Start Session'}
+          {sessionActive ? tr("End Session") : tr("Start Session")}
         </button>
       </motion.div>
 
@@ -226,9 +229,9 @@ function LiveSession() {
               // Build display label
               let noteLabel;
               if (dn.instrument === 'drum') {
-                noteLabel = dn.drum || dn.note || '?';
+                noteLabel = drum(dn.drum || dn.note) || '?';
               } else {
-                noteLabel = dn.swara || dn.noteName || dn.note || '?';
+                noteLabel = (dn.swara ? sw(dn.swara) : null) || dn.noteName || dn.note || '?';
               }
               let detailLine;
               if (dn.instrument === 'drum') {
@@ -251,11 +254,11 @@ function LiveSession() {
                 >
                   <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: getInstrumentColor(dn.instrument), boxShadow: `0 0 15px ${getInstrumentColor(dn.instrument)}` }}></div>
                   <div style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: '500' }}>
-                    {dn.instrument}{isReleased ? ' ↓' : ''}
+                    {tr(dn.instrument)}{isReleased ? ' ↓' : ''}
                   </div>
                   <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }}></div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: getInstrumentColor(dn.instrument), lineHeight: 1 }}>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: getInstrumentColor(dn.instrument), lineHeight: lang === 'si' ? 1.4 : 1 }}>
                       {noteLabel}
                     </div>
                     {detailLine && (
@@ -279,11 +282,11 @@ function LiveSession() {
           style={{ display: 'flex', gap: '2rem', marginTop: '4rem', zIndex: 1 }}
         >
           <div style={{ padding: '1.5rem 2.5rem', textAlign: 'center', background: 'linear-gradient(to top, rgba(236,72,153,0.1), transparent)', borderBottom: '2px solid #ec4899', borderRadius: '12px' }}>
-            <div style={{ color: '#f472b6', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Notes Played</div>
+            <div style={{ color: '#f472b6', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{tr("Notes Played")}</div>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{notesPlayed}</div>
           </div>
           <div style={{ padding: '1.5rem 2.5rem', textAlign: 'center', background: 'linear-gradient(to top, rgba(16,185,129,0.1), transparent)', borderBottom: '2px solid #10b981', borderRadius: '12px' }}>
-            <div style={{ color: '#34d399', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Instruments</div>
+            <div style={{ color: '#34d399', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{tr("Instruments")}</div>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{instrumentsUsed.size}</div>
           </div>
         </motion.div>

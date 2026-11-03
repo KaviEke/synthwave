@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SocketContext } from '../context/SocketContext';
 import { songs } from '../data/songs';
+import { useLanguage } from '../context/LanguageContext';
 
 const ACCENT = '#a855f7';
 const VIOLIN_STRINGS = [
@@ -13,6 +14,7 @@ const VIOLIN_STRINGS = [
 ];
 
 const TutorialViolin = () => {
+  const { tr, sw, lang } = useLanguage();
   const { songId } = useParams();
   const navigate = useNavigate();
   const { lastPerformanceEvent, hardwareState, bowState } = useContext(SocketContext);
@@ -29,9 +31,9 @@ const TutorialViolin = () => {
   const [demoMode, setDemoMode] = useState(false);
   
   useEffect(() => {
-    document.title = "Tutorial | SynthWave Motion";
-    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
-  }, []);
+    document.title = tr("Tutorial | SynthWave Motion");
+    return () => { document.title = tr("SynthWave Motion | Interactive Digital Instrument"); };
+  }, [tr]);
 
   const piOnline = hardwareState.deviceStatus['raspberry-pi-4b']?.active || hardwareState.deviceStatus['raspberry-pi-simulator']?.active || false;
 
@@ -90,8 +92,8 @@ const TutorialViolin = () => {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0f1c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ color: '#f3f4f6', fontSize: '1.3rem' }}>Song not found</p>
-          <button onClick={() => navigate('/tutorial')} style={btnStyle}>Back to Tutorials</button>
+          <p style={{ color: '#f3f4f6', fontSize: '1.3rem' }}>{tr("Song not found")}</p>
+          <button onClick={() => navigate('/tutorial')} style={btnStyle}>{tr("Back to Tutorials")}</button>
         </div>
       </div>
     );
@@ -107,17 +109,17 @@ const TutorialViolin = () => {
           style={{ ...panelStyle, textAlign: 'center', padding: '3rem 2.5rem', maxWidth: 480 }}
         >
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
-          <h1 style={{ color: '#f3f4f6', fontSize: '2rem', marginBottom: '0.5rem' }}>Tutorial Complete!</h1>
+          <h1 style={{ color: '#f3f4f6', fontSize: '2rem', marginBottom: '0.5rem' }}>{tr("Tutorial Complete!")}</h1>
           <p style={{ color: '#9ca3af', fontSize: '1rem', marginBottom: '1.5rem' }}>{song.title}</p>
           <div style={{
             fontSize: '3.5rem', fontWeight: 800,
             color: pct >= 80 ? '#22c55e' : pct >= 50 ? '#eab308' : '#ef4444',
             marginBottom: '0.5rem',
           }}>{pct}%</div>
-          <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>{score} / {totalNotes} notes correct</p>
+          <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>{tr('{score} / {total} notes correct', { score, total: totalNotes })}</p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => { setCurrentIndex(0); setScore(0); setCompleted(false); setFeedback(null); }} style={btnStyle}>🔁 Retry</button>
-            <button onClick={() => navigate('/tutorial')} style={{ ...btnStyle, background: 'rgba(255,255,255,0.07)' }}>← Back to Tutorials</button>
+            <button onClick={() => { setCurrentIndex(0); setScore(0); setCompleted(false); setFeedback(null); }} style={btnStyle}>{tr("🔁 Retry")}</button>
+            <button onClick={() => navigate('/tutorial')} style={{ ...btnStyle, background: 'rgba(255,255,255,0.07)' }}>{tr("← Back to Tutorials")}</button>
           </div>
         </motion.div>
       </div>
@@ -132,14 +134,14 @@ const TutorialViolin = () => {
     <div style={{ minHeight: '100vh', background: '#0a0f1c', padding: '1.5rem', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
       {/* Header */}
       <div style={{ maxWidth: 900, margin: '0 auto 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <button onClick={() => navigate('/tutorial')} style={{ ...btnStyle, padding: '0.5rem 1rem', fontSize: '0.85rem' }}>← Back to Tutorials</button>
+        <button onClick={() => navigate('/tutorial')} style={{ ...btnStyle, padding: '0.5rem 1rem', fontSize: '0.85rem' }}>{tr("← Back to Tutorials")}</button>
         <h1 style={{ color: '#f3f4f6', fontSize: '1.4rem', fontWeight: 700, margin: 0, textAlign: 'center', flex: 1 }}>
           🎻 {song.title}
         </h1>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginRight: '0.5rem' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: piOnline ? '#22c55e' : '#ef4444' }} />
-            <span style={{ fontSize: '0.7rem', color: piOnline ? '#22c55e' : '#9ca3af' }}>{piOnline ? 'HW' : 'No HW'}</span>
+            <span style={{ fontSize: '0.7rem', color: piOnline ? '#22c55e' : '#9ca3af' }}>{piOnline ? tr("HW") : tr("No HW")}</span>
           </div>
           <button
             onClick={() => setDemoMode(d => !d)}
@@ -150,9 +152,9 @@ const TutorialViolin = () => {
               color: demoMode ? ACCENT : '#9ca3af',
             }}
           >
-            {demoMode ? '🖱 Demo ON' : '🖱 Demo'}
+            {demoMode ? tr("🖱 Demo ON") : tr("🖱 Demo")}
           </button>
-          <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Speed:</span>
+          <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>{tr("Speed:")}</span>
           {[1, 1.5, 2].map((s) => (
             <button key={s} onClick={() => setSpeed(s)} style={{
               padding: '0.3rem 0.6rem', borderRadius: 6,
@@ -168,8 +170,8 @@ const TutorialViolin = () => {
       {/* Progress */}
       <div style={{ maxWidth: 900, margin: '0 auto 1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ color: '#9ca3af', fontSize: '0.82rem' }}>Note {currentIndex + 1} of {totalNotes}</span>
-          <span style={{ color: ACCENT, fontSize: '0.82rem', fontWeight: 600 }}>Score: {score}</span>
+          <span style={{ color: '#9ca3af', fontSize: '0.82rem' }}>{tr('Note {n} of {total}', { n: currentIndex + 1, total: totalNotes })}</span>
+          <span style={{ color: ACCENT, fontSize: '0.82rem', fontWeight: 600 }}>{tr("Score:")} {score}</span>
         </div>
         <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3 }}>
           <motion.div
@@ -182,7 +184,7 @@ const TutorialViolin = () => {
       {/* Lyrics */}
       {song.lyrics && (
         <div style={{ ...panelStyle, maxWidth: 900, margin: '0 auto 1.5rem', padding: '1.2rem 1.5rem' }}>
-          <h3 style={{ color: '#9ca3af', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: '0.8rem', marginTop: 0 }}>Lyrics</h3>
+          <h3 style={{ color: '#9ca3af', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: '0.8rem', marginTop: 0 }}>{tr("Lyrics")}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             {song.lyrics.map((l, i) => (
               <div key={i} style={{
@@ -191,7 +193,7 @@ const TutorialViolin = () => {
                 background: i === lineIndex ? `${ACCENT}15` : 'transparent',
                 border: i === lineIndex ? `1px solid ${ACCENT}33` : '1px solid transparent',
               }}>
-                <span style={{ color: i === lineIndex ? ACCENT : '#6b7280', fontSize: '0.75rem', fontFamily: 'monospace', minWidth: 80, letterSpacing: 1 }}>{l.notes}</span>
+                <span style={{ color: i === lineIndex ? ACCENT : '#6b7280', fontSize: lang === 'si' ? '0.9rem' : '0.75rem', fontFamily: lang === 'si' ? 'inherit' : 'monospace', minWidth: 80, letterSpacing: lang === 'si' ? 'normal' : 1 }}>{sw(l.notes)}</span>
                 <span style={{ color: i === lineIndex ? '#f3f4f6' : '#6b7280', fontSize: '0.95rem', fontWeight: i === lineIndex ? 600 : 400 }}>{l.line}</span>
               </div>
             ))}
@@ -201,7 +203,7 @@ const TutorialViolin = () => {
 
       {/* Current Note */}
       <div style={{ maxWidth: 900, margin: '0 auto 1.5rem', textAlign: 'center' }}>
-        <p style={{ color: '#9ca3af', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Play this note:</p>
+        <p style={{ color: '#9ca3af', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{tr("Play this note:")}</p>
         <AnimatePresence mode="wait">
           <motion.div
             key={`${currentIndex}-${feedback}`}
@@ -215,11 +217,11 @@ const TutorialViolin = () => {
               textShadow: feedback === 'correct' ? '0 0 30px rgba(34,197,94,0.6)' : feedback === 'wrong' ? '0 0 30px rgba(239,68,68,0.6)' : `0 0 30px ${ACCENT}88`,
             }}
           >
-            {feedback === 'correct' ? '✓' : feedback === 'wrong' ? '✗' : expectedNote}
+            {feedback === 'correct' ? '✓' : feedback === 'wrong' ? '✗' : sw(expectedNote)}
           </motion.div>
         </AnimatePresence>
-        {feedback === 'correct' && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#22c55e', fontSize: '0.9rem' }}>Correct!</motion.p>}
-        {feedback === 'wrong' && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#ef4444', fontSize: '0.9rem' }}>Try again — play {expectedNote}</motion.p>}
+        {feedback === 'correct' && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#22c55e', fontSize: '0.9rem' }}>{tr("Correct!")}</motion.p>}
+        {feedback === 'wrong' && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#ef4444', fontSize: '0.9rem' }}>{tr('Try again — play {note}', { note: sw(expectedNote) })}</motion.p>}
       </div>
 
       {/* Violin Strings Visual */}
@@ -271,7 +273,7 @@ const TutorialViolin = () => {
                   color: isActive ? str.color : '#6b7280',
                   transition: 'color 0.3s',
                 }}>
-                  {str.name}
+                  {tr(str.name)}
                 </div>
               );
             })}
@@ -279,7 +281,7 @@ const TutorialViolin = () => {
           
           {demoMode && (
             <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.8rem', marginTop: '1.5rem' }}>
-              🖱 Click a string to play {expectedNote} (Demo Mode)
+              {tr('🖱 Click a string to play {note} (Demo Mode)', { note: sw(expectedNote) })}
             </p>
           )}
 

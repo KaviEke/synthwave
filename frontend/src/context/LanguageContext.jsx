@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import translations, { SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE } from '../i18n/translations';
+import { siPhrases } from '../i18n/phrases';
+import { localizeSwara, localizeDrum } from '../i18n/music';
 
 const STORAGE_KEY = 'syntronics-lang';
 
@@ -21,7 +23,13 @@ export const LanguageContext = createContext({
   setLang: () => {},
   toggleLang: () => {},
   t: (key) => key,
+  tr: (text) => text,
+  sw: (value) => value,
+  drum: (value) => value,
 });
+
+const interpolate = (text, vars) =>
+  vars ? text.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined && vars[k] !== null ? vars[k] : m)) : text;
 
 export const LanguageProvider = ({ children }) => {
   const [lang, setLangState] = useState(readStoredLanguage);
@@ -55,7 +63,29 @@ export const LanguageProvider = ({ children }) => {
     [lang]
   );
 
-  const value = useMemo(() => ({ lang, setLang, toggleLang, t }), [lang, setLang, toggleLang, t]);
+  // tr('English phrase', { vars }) -> Sinhala phrase from i18n/phrases.js when 'si' is active.
+  // The English text is the key, so English rendering is byte-for-byte unchanged.
+  const tr = useCallback(
+    (text, vars) => {
+      let out = text;
+      if (lang !== DEFAULT_LANGUAGE) {
+        const hit = siPhrases[text];
+        if (hit !== undefined) out = hit;
+        else if (import.meta.env.DEV) console.warn('[i18n] missing si phrase:', JSON.stringify(text));
+      }
+      return interpolate(out, vars);
+    },
+    [lang]
+  );
+
+  // Display-only helpers for live hardware values (swara names, drum names).
+  const sw = useCallback((v) => localizeSwara(v, lang), [lang]);
+  const drum = useCallback((v) => localizeDrum(v, lang), [lang]);
+
+  const value = useMemo(
+    () => ({ lang, setLang, toggleLang, t, tr, sw, drum }),
+    [lang, setLang, toggleLang, t, tr, sw, drum]
+  );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };

@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const LoopTrack = ({ track, onCommand }) => {
+  const { tr } = useLanguage();
   if (!track) return null;
 
   const {
@@ -28,14 +30,14 @@ const LoopTrack = ({ track, onCommand }) => {
           {instrument === 'violin' && '🎻'}
         </div>
         <div className="track-name-group">
-          <div className="track-name">{instrument.toUpperCase()}</div>
+          <div className="track-name">{tr(instrument).toUpperCase()}</div>
           <div className="track-badges">
             {hasRecording ? (
-              <span className="badge recorded">Recorded ({eventCount})</span>
+              <span className="badge recorded">{tr("Recorded ({n})", { n: eventCount })}</span>
             ) : (
-              <span className="badge empty">Empty</span>
+              <span className="badge empty">{tr("Empty")}</span>
             )}
-            {recording && <span className="badge rec-active">REC</span>}
+            {recording && <span className="badge rec-active">{tr("REC")}</span>}
           </div>
         </div>
       </div>
@@ -45,21 +47,21 @@ const LoopTrack = ({ track, onCommand }) => {
           className={`track-btn arm-btn ${armed ? 'active' : ''}`}
           onClick={() => onCommand('loop_arm_track', { trackId: armed ? null : trackId })}
         >
-          {armed ? 'Armed' : 'Arm'}
+          {armed ? tr("Armed") : tr("Arm")}
         </button>
 
         <button 
           className={`track-btn mute-btn ${muted ? 'active' : ''}`}
           onClick={() => onCommand('loop_mute_track', { trackId, muted: !muted })}
         >
-          Mute
+          {tr("Mute")}
         </button>
 
         <button 
           className={`track-btn solo-btn ${solo ? 'active' : ''}`}
           onClick={() => onCommand('loop_solo_track', { trackId, solo: !solo })}
         >
-          Solo
+          {tr("Solo")}
         </button>
 
         <button 
@@ -67,7 +69,7 @@ const LoopTrack = ({ track, onCommand }) => {
           onClick={() => onCommand('loop_undo_track', { trackId })}
           disabled={!hasRecording}
         >
-          Undo
+          {tr("Undo")}
         </button>
 
         <button 
@@ -75,11 +77,11 @@ const LoopTrack = ({ track, onCommand }) => {
           onClick={() => onCommand('loop_clear_track', { trackId })}
           disabled={!hasRecording}
         >
-          Clear
+          {tr("Clear")}
         </button>
 
         <div className="volume-control">
-          <label>Vol</label>
+          <label>{tr("Vol")}</label>
           <input 
             type="range" 
             min="0" 
