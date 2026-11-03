@@ -273,3 +273,100 @@ input:focus {
     z-index: 100;
   }
 }
+
+/* --- Language toggle (EN | සිං) --- */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  background: rgba(14, 165, 233, 0.08);
+  flex-shrink: 0;
+}
+
+.lang-toggle__option {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  min-width: 2.4rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.lang-toggle__option[lang="si"] {
+  font-family: 'Noto Sans Sinhala', 'Inter', system-ui, sans-serif;
+}
+
+.lang-toggle__option:hover {
+  color: var(--primary-glow);
+}
+
+.lang-toggle__option.is-active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+}
+
+.lang-toggle__option:focus-visible {
+  outline: 2px solid var(--primary-glow);
+  outline-offset: 2px;
+}
+
+.lang-toggle__divider {
+  color: rgba(148, 163, 184, 0.4);
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+/* --- Sinhala typography --- */
+/* Noto Sans Sinhala first; Inter still covers Latin brand/tech words. */
+html[lang="si"] * {
+  font-family: 'Noto Sans Sinhala', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Sinhala vowel signs (පිල්ලම්) extend above/below the baseline:
+   give text room so nothing clips, and drop Latin-only letter-spacing
+   which breaks up conjuncts. Components with inline line-heights
+   switch them via the `lang` value from LanguageContext. */
+html[lang="si"] h1,
+html[lang="si"] h2,
+html[lang="si"] h3,
+html[lang="si"] h4,
+html[lang="si"] p,
+html[lang="si"] li,
+html[lang="si"] label,
+html[lang="si"] button,
+html[lang="si"] .nav-links a {
+  line-height: 1.6;
+  letter-spacing: normal;
+}
+
+html[lang="si"] input,
+html[lang="si"] textarea {
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .nav-right {
+    gap: 0.75rem;
+  }
+
+  /* Sinhala hero copy is taller; drop the upward pull so the headline
+     doesn't slide under the fixed navbar. */
+  html[lang="si"] .hero-content {
+    margin-top: 0;
+  }
+}

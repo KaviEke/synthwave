@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import ParticleCursor from '../components/ParticleCursor';
+import { useLanguage } from '../context/LanguageContext';
 
 function SupportUs() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const { t } = useLanguage();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -27,24 +29,24 @@ function SupportUs() {
         transition={{ duration: 0.5 }}
       >
         <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--primary)', textAlign: 'center', fontWeight: 'bold' }}>
-          Support Us
+          {t('support.title')}
         </h1>
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>
-          We would love to hear your feedback on the SYNTRONICS hardware experience! Send us a message below.
+          {t('support.subtitle')}
         </p>
 
         {submitted && (
           <div style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            Thank you! Your feedback has been successfully submitted to our team.
+            {t('support.success')}
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>Your Email</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>{t('support.emailLabel')}</label>
             <input 
               type="email" 
-              placeholder="Email Address" 
+              placeholder={t('support.emailPlaceholder')} 
               value={email} 
               onChange={e => setEmail(e.target.value)} 
               required 
@@ -52,9 +54,9 @@ function SupportUs() {
             />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>Feedback Message</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'rgba(255,255,255,0.8)' }}>{t('support.messageLabel')}</label>
             <textarea 
-              placeholder="What do you think about the project?" 
+              placeholder={t('support.messagePlaceholder')} 
               value={message} 
               onChange={e => setMessage(e.target.value)} 
               required 
@@ -63,7 +65,7 @@ function SupportUs() {
             />
           </div>
           <button type="submit" className="btn-primary" style={{marginTop: '1rem', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '1.1rem', fontWeight: 'bold'}}>
-            Send Feedback
+            {t('support.submit')}
           </button>
         </form>
 

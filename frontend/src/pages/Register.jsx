@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ParticleCursor from '../components/ParticleCursor';
+import { useLanguage } from '../context/LanguageContext';
 
 function Register() {
   const { register } = useContext(AuthContext);
@@ -10,27 +11,29 @@ function Register() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  // error: { key } for local validation (re-translates on language switch) or { text } from the API
+  const [error, setError] = useState(null);
+  const { t } = useLanguage();
 
   React.useEffect(() => {
-    document.title = "Create Account | SynthWave Motion";
-    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
-  }, []);
+    document.title = t('register.pageTitle');
+    return () => { document.title = t('common.siteTitle'); };
+  }, [t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     
     if (!username.trim() || username.trim().length < 3) {
-      setError('Username must be at least 3 characters.');
+      setError({ key: 'register.errors.usernameMin' });
       return;
     }
     if (!email.trim() || !email.includes('@')) {
-      setError('Please enter a valid email address.');
+      setError({ key: 'register.errors.emailInvalid' });
       return;
     }
     if (!password || password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError({ key: 'register.errors.passwordMin' });
       return;
     }
     
@@ -38,7 +41,7 @@ function Register() {
     if (res.success) {
       navigate('/dashboard');
     } else {
-      setError(res.message);
+      setError({ text: res.message });
     }
   };
 
@@ -52,12 +55,12 @@ function Register() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <h2 style={{ fontSize: '2.2rem', marginBottom: '2rem', color: 'white', textAlign: 'center', fontWeight: 'bold' }}>Begin Journey</h2>
-        {error && <div className="error-msg" style={{ marginBottom: '1rem' }}>{error}</div>}
+        <h2 style={{ fontSize: '2.2rem', marginBottom: '2rem', color: 'white', textAlign: 'center', fontWeight: 'bold' }}>{t('register.heading')}</h2>
+        {error && <div className="error-msg" style={{ marginBottom: '1rem' }}>{error.key ? t(error.key) : error.text}</div>}
         <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column'}}>
           <input 
             type="text" 
-            placeholder="Username" 
+            placeholder={t('register.username')} 
             value={username} 
             onChange={e => setUsername(e.target.value)} 
             required 
@@ -66,7 +69,7 @@ function Register() {
           />
           <input 
             type="email" 
-            placeholder="Email Address" 
+            placeholder={t('register.email')} 
             value={email} 
             onChange={e => setEmail(e.target.value)} 
             required 
@@ -74,7 +77,7 @@ function Register() {
           />
           <input 
             type="password" 
-            placeholder="Password" 
+            placeholder={t('register.password')} 
             value={password} 
             onChange={e => setPassword(e.target.value)} 
             required 
@@ -82,11 +85,11 @@ function Register() {
             style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px' }}
           />
           <button type="submit" className="btn-primary" style={{marginTop: '1.5rem', background: 'var(--primary)', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '1.1rem'}}>
-            Register Hardware
+            {t('register.submit')}
           </button>
         </form>
         <p style={{textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)'}}>
-          Already geared up? <Link to="/login" style={{color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold'}}>Sign In</Link>
+          {t('register.alreadyGeared')} <Link to="/login" style={{color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold'}}>{t('register.signIn')}</Link>
         </p>
       </motion.div>
     </div>

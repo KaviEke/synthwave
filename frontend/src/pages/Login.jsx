@@ -3,29 +3,32 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ParticleCursor from '../components/ParticleCursor';
+import { useLanguage } from '../context/LanguageContext';
 
 function Login() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  // error: { key } for local validation (re-translates on language switch) or { text } from the API
+  const [error, setError] = useState(null);
+  const { t } = useLanguage();
 
   React.useEffect(() => {
-    document.title = "Login | SynthWave Motion";
-    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
-  }, []);
+    document.title = t('login.pageTitle');
+    return () => { document.title = t('common.siteTitle'); };
+  }, [t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     
     if (!username.trim()) {
-      setError('Please enter your username.');
+      setError({ key: 'login.errors.usernameRequired' });
       return;
     }
     if (!password) {
-      setError('Please enter your password.');
+      setError({ key: 'login.errors.passwordRequired' });
       return;
     }
     
@@ -33,7 +36,7 @@ function Login() {
     if (res.success) {
       navigate('/dashboard');
     } else {
-      setError(res.message);
+      setError({ text: res.message });
     }
   };
 
@@ -49,17 +52,17 @@ function Login() {
         {/* Left Branding Pane */}
         <div style={{ flex: '1 1 350px', background: 'transparent', padding: '4rem 3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'white', textAlign: 'center' }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', letterSpacing: '2px' }}>SYNTRONICS</h1>
-          <p style={{ fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.6 }}>Access your digital instrument control center and dive back into the music.</p>
+          <p style={{ fontSize: '1.1rem', opacity: 0.9, lineHeight: 1.6 }}>{t('login.tagline')}</p>
         </div>
 
         {/* Right Form Pane */}
         <div style={{ flex: '1 1 350px', padding: '4rem 3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h2 style={{ fontSize: '2rem', marginBottom: '2rem', color: 'white', fontWeight: 600 }}>Sign In</h2>
-          {error && <div className="error-msg" style={{ marginBottom: '1rem' }}>{error}</div>}
+          <h2 style={{ fontSize: '2rem', marginBottom: '2rem', color: 'white', fontWeight: 600 }}>{t('login.heading')}</h2>
+          {error && <div className="error-msg" style={{ marginBottom: '1rem' }}>{error.key ? t(error.key) : error.text}</div>}
           <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column'}}>
             <input 
               type="text" 
-              placeholder="Username" 
+              placeholder={t('login.username')} 
               value={username} 
               onChange={e => setUsername(e.target.value)} 
               required 
@@ -67,18 +70,18 @@ function Login() {
             />
             <input 
               type="password" 
-              placeholder="Password" 
+              placeholder={t('login.password')} 
               value={password} 
               onChange={e => setPassword(e.target.value)} 
               required 
               style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}
             />
             <button type="submit" className="btn-secondary" style={{marginTop: '1.5rem', padding: '14px', border: '1px solid var(--primary)', color: 'var(--primary)'}}>
-              Enter Dashboard
+              {t('login.submit')}
             </button>
           </form>
           <p style={{textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)'}}>
-            New artist? <Link to="/register" style={{color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold'}}>Create Account</Link>
+            {t('login.newArtist')} <Link to="/register" style={{color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold'}}>{t('login.createAccount')}</Link>
           </p>
         </div>
       </motion.div>
