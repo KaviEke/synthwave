@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 import { SocketContext } from '../context/SocketContext';
 import DiagnosticCard from '../components/DiagnosticCard';
+import { useLanguage } from '../context/LanguageContext';
 
 // --- Dark Theme Colors (matching site-wide black + blue palette) ---
 const colors = {
@@ -48,6 +49,7 @@ function midiToPitchClass(midi) {
 }
 
 export default function Dashboard() {
+  const { tr, sw, drum, lang } = useLanguage();
   const { user } = useContext(AuthContext);
   const {
     sendHardwareCommand, hardwareState, currentNote,
@@ -60,14 +62,14 @@ export default function Dashboard() {
   const [activeMode, setActiveMode] = useState('piano');
   const [volumes, setVolumes] = useState({ master: 80, piano: 100, violin: 100, drum: 100 });
   const [activityLog, setActivityLog] = useState([
-    { id: 1, time: new Date().toLocaleTimeString(), type: 'system', msg: 'System initialized.' }
+    { id: 1, ts: Date.now(), type: 'system', msg: 'System initialized.', vars: null }
   ]);
   const logContainerRef = useRef(null);
 
   useEffect(() => {
-    document.title = "SynthWave Dashboard | Interactive Digital Instrument";
-    return () => { document.title = "SynthWave Motion | Interactive Digital Instrument"; };
-  }, []);
+    document.title = tr("SynthWave Dashboard | Interactive Digital Instrument");
+    return () => { document.title = tr("SynthWave Motion | Interactive Digital Instrument"); };
+  }, [tr]);
 
   const piOnline = deviceStatus['raspberry-pi-4b']?.active || deviceStatus['raspberry-pi-simulator']?.active || false;
   const c1Online = deviceStatus['controller-1']?.active || false;
@@ -83,15 +85,26 @@ export default function Dashboard() {
     if (!lastPerformanceEvent) return;
     const e = lastPerformanceEvent;
     if (e.type === 'note_on') {
-      addLog('action', `${e.instrument?.toUpperCase()} NOTE ON: ${e.swara || '--'} (${e.noteName || e.midiNote}) — Controller ${e.controllerId || '?'} GPIO ${e.gpio ?? '?'}`);
+      addLog('action', '{instrument} NOTE ON: {swara} ({note}) — Controller {controller} GPIO {gpio}', { instrument: e.instrument, swara: e.swara || '--', note: e.noteName || e.midiNote, controller: e.controllerId || '?', gpio: e.gpio ?? '?' });
     } else if (e.type === 'drum_hit') {
-      addLog('action', `DRUM HIT: ${e.drum || '--'} — Controller ${e.controllerId || '?'} GPIO ${e.gpio ?? '?'}`);
+      addLog('action', 'DRUM HIT: {drum} — Controller {controller} GPIO {gpio}', { drum: e.drum || '--', controller: e.controllerId || '?', gpio: e.gpio ?? '?' });
     }
   }, [lastPerformanceEvent]);
 
   // --- Helpers ---
-  const addLog = (type, msg) => {
-    setActivityLog(prev => [...prev.slice(-99), { id: Date.now(), time: new Date().toLocaleTimeString(), type, msg }]);
+  // msg is an English template ('… {var} …'); it is translated when rendered so the log follows the language toggle.
+  const addLog = (type, msg, vars = null) => {
+    setActivityLog(prev => [...prev.slice(-99), { id: Date.now(), ts: Date.now(), type, msg, vars }]);
+  };
+
+  const renderLogMsg = (log) => {
+    if (!log.vars) return tr(log.msg);
+    const v = { ...log.vars };
+    if (v.instrument !== undefined) v.instrument = lang === 'si' ? tr(String(v.instrument).charAt(0).toUpperCase() + String(v.instrument).slice(1)) : String(v.instrument).toUpperCase();
+    if (v.swara !== undefined) v.swara = sw(v.swara);
+    if (v.drum !== undefined) v.drum = drum(v.drum);
+    if (v.mode !== undefined) v.mode = tr(v.mode);
+    return tr(log.msg, v);
   };
 
   useEffect(() => {
@@ -103,7 +116,7 @@ export default function Dashboard() {
   // --- Handlers ---
   const handleModeChange = (mode) => {
     setActiveMode(mode);
-    addLog('mode', `Mode changed to ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
+    addLog('mode', 'Mode changed to {mode}', { mode: mode.charAt(0).toUpperCase() + mode.slice(1) });
     if (sendHardwareCommand) {
       sendHardwareCommand('set_mode', { mode });
     }
@@ -126,7 +139,7 @@ export default function Dashboard() {
   };
 
   const handleDrumTest = (sound) => {
-    addLog('action', `Drum pad triggered: ${sound}`);
+    addLog('action', 'Drum pad triggered: {drum}', { drum: sound });
     if (sendHardwareCommand) sendHardwareCommand('play_drum', { sound });
   };
 
@@ -202,10 +215,10 @@ export default function Dashboard() {
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               backgroundClip: 'text', color: 'transparent',
             }}>
-              Synthwave Control Center
+              {tr("Synthwave Control Center")}
             </h1>
             <p style={{ color: colors.textMuted, margin: '0.5rem 0 0 0', fontSize: '1.1rem' }}>
-              Monitor hardware, shape sound, and command your performance — all in one place.
+              {tr("Monitor hardware, shape sound, and command your performance — all in one place.")}
             </p>
           </div>
           <div style={{
@@ -220,7 +233,7 @@ export default function Dashboard() {
               style={{ width: '12px', height: '12px', borderRadius: '50%', background: piOnline ? colors.success : colors.danger, boxShadow: `0 0 8px ${piOnline ? colors.success : colors.danger}` }}
             />
             <span style={{ color: piOnline ? colors.success : colors.danger, fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', fontSize: '0.85rem' }}>
-              {piOnline ? 'System Online' : 'System Offline'}
+              {piOnline ? tr("System Online") : tr("System Offline")}
             </span>
           </div>
         </div>
@@ -230,7 +243,7 @@ export default function Dashboard() {
 
         {/* ============== 2. INSTRUMENT MODE SELECTOR ============== */}
         <section>
-          <h2 style={{ fontSize: '1.5rem', color: colors.textMain, margin: '0 0 1rem 0' }}>Select Instrument Mode</h2>
+          <h2 style={{ fontSize: '1.5rem', color: colors.textMain, margin: '0 0 1rem 0' }}>{tr("Select Instrument Mode")}</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
             {modes.map(m => {
               const isActive = activeMode === m.id;
@@ -254,13 +267,13 @@ export default function Dashboard() {
                   }}
                 >
                   <span style={{ fontSize: '3.5rem', marginBottom: '1rem', filter: isActive ? `drop-shadow(0 0 12px ${m.color})` : 'none' }}>{m.icon}</span>
-                  <span style={{ fontSize: '1.3rem', fontWeight: 'bold', color: isActive ? m.color : colors.textMuted }}>{m.label}</span>
+                  <span style={{ fontSize: '1.3rem', fontWeight: 'bold', color: isActive ? m.color : colors.textMuted }}>{tr(m.label)}</span>
                   {isActive && (
                     <motion.div
                       initial={{ scale: 0 }} animate={{ scale: 1 }}
                       style={{ position: 'absolute', top: '10px', right: '10px', background: m.color, color: 'white', fontSize: '0.7rem', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold', letterSpacing: '1px' }}
                     >
-                      ACTIVE
+                      {tr("ACTIVE")}
                     </motion.div>
                   )}
                   {isActive && <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '4px', background: m.color, boxShadow: `0 0 12px ${m.color}` }}></div>}
@@ -276,22 +289,22 @@ export default function Dashboard() {
           <div style={panelStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
               <div>
-                <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.5rem', color: colors.textMain }}>Controller 1</h3>
-                <span style={{ color: colors.textDim, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Main Controller</span>
+                <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.5rem', color: colors.textMain }}>{tr("Controller 1")}</h3>
+                <span style={{ color: colors.textDim, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{tr("Main Controller")}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: c1Online ? colors.success : colors.textDim, background: c1Online ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)', padding: '4px 12px', borderRadius: '20px', border: `1px solid ${c1Online ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)'}` }}>
                 <span style={{ fontSize: '1rem' }}>{c1Online ? '✓' : '✗'}</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{c1Online ? 'Connected' : 'Disconnected'}</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{c1Online ? tr("Connected") : tr("Disconnected")}</span>
               </div>
             </div>
             <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.95rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Role:</span> <strong style={{ color: colors.cyan }}>Piano Notes • Violin Bow • Drum Motion</strong></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Battery:</span> <strong style={{ color: colors.textMain }}>{deviceStatus['controller-1']?.battery ? `${deviceStatus['controller-1'].battery}%` : '--'}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>{tr("Role:")}</span> <strong style={{ color: colors.cyan }}>{tr("Piano Notes • Violin Bow • Drum Motion")}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>{tr("Battery:")}</span> <strong style={{ color: colors.textMain }}>{deviceStatus['controller-1']?.battery ? `${deviceStatus['controller-1'].battery}%` : '--'}</strong></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '0.9rem' }}>
               {['MPU9250 IMU', 'HMC5883L Mag', 'Joystick', 'BMP180 Barometer'].map(s => (
                 <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.textMuted }}>
-                  <span style={{ color: c1Online ? colors.success : colors.textDim }}>{c1Online ? '✓' : '○'}</span> {s}
+                  <span style={{ color: c1Online ? colors.success : colors.textDim }}>{c1Online ? '✓' : '○'}</span> {tr(s)}
                 </div>
               ))}
             </div>
@@ -301,22 +314,22 @@ export default function Dashboard() {
           <div style={panelStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
               <div>
-                <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.5rem', color: colors.textMain }}>Controller 2</h3>
-                <span style={{ color: colors.textDim, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Secondary Controller</span>
+                <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.5rem', color: colors.textMain }}>{tr("Controller 2")}</h3>
+                <span style={{ color: colors.textDim, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{tr("Secondary Controller")}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: c2Online ? colors.success : colors.textDim, background: c2Online ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)', padding: '4px 12px', borderRadius: '20px', border: `1px solid ${c2Online ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)'}` }}>
                 <span style={{ fontSize: '1rem' }}>{c2Online ? '✓' : '✗'}</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{c2Online ? 'Connected' : 'Disconnected'}</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{c2Online ? tr("Connected") : tr("Disconnected")}</span>
               </div>
             </div>
             <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.95rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Role:</span> <strong style={{ color: colors.purple }}>Additional Notes • Modifiers</strong></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Battery:</span> <strong style={{ color: colors.textMain }}>{deviceStatus['controller-2']?.battery ? `${deviceStatus['controller-2'].battery}%` : '--'}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>{tr("Role:")}</span> <strong style={{ color: colors.purple }}>{tr("Additional Notes • Modifiers")}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>{tr("Battery:")}</span> <strong style={{ color: colors.textMain }}>{deviceStatus['controller-2']?.battery ? `${deviceStatus['controller-2'].battery}%` : '--'}</strong></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '0.9rem' }}>
               {['Button Inputs', 'Wi-Fi Connection'].map(s => (
                 <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.textMuted }}>
-                  <span style={{ color: c2Online ? colors.success : colors.textDim }}>{c2Online ? '✓' : '○'}</span> {s}
+                  <span style={{ color: c2Online ? colors.success : colors.textDim }}>{c2Online ? '✓' : '○'}</span> {tr(s)}
                 </div>
               ))}
             </div>
@@ -328,7 +341,7 @@ export default function Dashboard() {
 
           {/* LIVE MONITOR */}
           <div style={{ ...panelStyle, display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.4rem', color: colors.textMain }}>Live Performance</h3>
+            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.4rem', color: colors.textMain }}>{tr("Live Performance")}</h3>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeMode}
@@ -342,29 +355,29 @@ export default function Dashboard() {
                   return (
                     <>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Current Swara:</span>
+                        <span style={{ color: colors.textMuted }}>{tr("Current Swara:")}</span>
                         <strong style={{ fontSize: '1.2rem', color: isReleased ? colors.textDim : colors.cyan }}>
-                          {e?.swara || '--'}{isReleased ? ' (Released)' : ''}
+                          {sw(e?.swara) || '--'}{isReleased ? tr(" (Released)") : ''}
                         </strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>MIDI Note:</span>
+                        <span style={{ color: colors.textMuted }}>{tr("MIDI Note:")}</span>
                         <strong style={{ color: colors.textMain }}>{e?.midiNote != null ? `${e.midiNote} (${e.noteName || ''})` : '--'}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Pitch Range:</span>
-                        <strong style={{ color: colors.cyan }}>{currentRegister || 'Madhya'}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Pitch Range:")}</span>
+                        <strong style={{ color: colors.cyan }}>{sw(currentRegister || 'Madhya')}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Controller:</span>
-                        <strong style={{ color: colors.textMain }}>{e?.controllerId ? `Controller ${e.controllerId}` : '--'}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Controller:")}</span>
+                        <strong style={{ color: colors.textMain }}>{e?.controllerId ? tr('Controller {n}', { n: e.controllerId }) : '--'}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Button:</span>
+                        <span style={{ color: colors.textMuted }}>{tr("Button:")}</span>
                         <strong style={{ color: colors.textMain }}>{e?.gpio != null ? `GPIO ${e.gpio}` : '--'}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: colors.textMuted }}>Velocity:</span>
+                        <span style={{ color: colors.textMuted }}>{tr("Velocity:")}</span>
                         <strong style={{ color: colors.textMain }}>{e?.velocity != null ? e.velocity : '--'}</strong>
                       </div>
                     </>
@@ -375,24 +388,24 @@ export default function Dashboard() {
                   return (
                     <>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Current Note:</span>
-                        <strong style={{ fontSize: '1.2rem', color: colors.purple }}>{e?.swara || '--'}{e?.noteName ? ` (${e.noteName})` : ''}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Current Note:")}</span>
+                        <strong style={{ fontSize: '1.2rem', color: colors.purple }}>{sw(e?.swara) || '--'}{e?.noteName ? ` (${e.noteName})` : ''}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Selected String:</span>
-                        <strong style={{ color: colors.textMain }}>{e?.stringIndex != null ? `String ${e.stringIndex + 1}` : (bowState.stringIndex != null ? `String ${bowState.stringIndex + 1}` : '--')}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Selected String:")}</span>
+                        <strong style={{ color: colors.textMain }}>{e?.stringIndex != null ? tr('String {n}', { n: e.stringIndex + 1 }) : (bowState.stringIndex != null ? tr('String {n}', { n: bowState.stringIndex + 1 }) : '--')}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Bow Status:</span>
-                        <strong style={{ color: bowState.active ? colors.purple : colors.textDim }}>{bowState.active ? 'Active' : 'Idle'}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Bow Status:")}</span>
+                        <strong style={{ color: bowState.active ? colors.purple : colors.textDim }}>{bowState.active ? tr("Active") : tr("Idle")}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Finger:</span>
-                        <strong style={{ color: colors.textMain }}>{e?.fingerIndex != null ? `Finger ${e.fingerIndex}` : '--'}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Finger:")}</span>
+                        <strong style={{ color: colors.textMain }}>{e?.fingerIndex != null ? tr('Finger {n}', { n: e.fingerIndex }) : '--'}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: colors.textMuted }}>Meend:</span>
-                        <strong style={{ color: colors.textMain }}>{meendState !== 0 ? meendState : 'Neutral'}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Meend:")}</span>
+                        <strong style={{ color: colors.textMain }}>{meendState !== 0 ? meendState : tr("Neutral")}</strong>
                       </div>
                     </>
                   );
@@ -402,33 +415,33 @@ export default function Dashboard() {
                   return (
                     <>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Last Hit:</span>
-                        <strong style={{ fontSize: '1.2rem', color: colors.pink }}>{e?.drum || '--'}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Last Hit:")}</span>
+                        <strong style={{ fontSize: '1.2rem', color: colors.pink }}>{drum(e?.drum) || '--'}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Velocity:</span>
+                        <span style={{ color: colors.textMuted }}>{tr("Velocity:")}</span>
                         <strong style={{ color: colors.textMain }}>{e?.velocity != null ? e.velocity : '--'}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Controller:</span>
-                        <strong style={{ color: colors.textMain }}>{e?.controllerId ? `Controller ${e.controllerId}` : '--'}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Controller:")}</span>
+                        <strong style={{ color: colors.textMain }}>{e?.controllerId ? tr('Controller {n}', { n: e.controllerId }) : '--'}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', ...rowDivider }}>
-                        <span style={{ color: colors.textMuted }}>Button:</span>
+                        <span style={{ color: colors.textMuted }}>{tr("Button:")}</span>
                         <strong style={{ color: colors.textMain }}>{e?.gpio != null ? `GPIO ${e.gpio}` : '--'}</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: colors.textMuted }}>Motion State:</span>
-                        <strong style={{ color: colors.pink }}>{e ? 'Hit Detected' : 'Idle'}</strong>
+                        <span style={{ color: colors.textMuted }}>{tr("Motion State:")}</span>
+                        <strong style={{ color: colors.pink }}>{e ? tr("Hit Detected") : tr("Idle")}</strong>
                       </div>
                     </>
                   );
                 })()}
                 {activeMode === 'vocal' && (
                   <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>Status:</span> <strong style={{ color: colors.success }}>Vocal mode ready</strong></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: colors.textMuted }}>{tr("Status:")}</span> <strong style={{ color: colors.success }}>{tr("Vocal mode ready")}</strong></div>
                     <div style={{ padding: '1rem', background: 'rgba(14,165,233,0.05)', border: '1px dashed rgba(14,165,233,0.2)', borderRadius: '8px', marginTop: '1rem', color: colors.textMuted, textAlign: 'center' }}>
-                      Microphone and voice features can be connected here.
+                      {tr("Microphone and voice features can be connected here.")}
                     </div>
                   </>
                 )}
@@ -443,7 +456,7 @@ export default function Dashboard() {
 
           {/* ============== 3D VISUALIZER ============== */}
           <div style={{ ...panelStyle, display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.4rem', color: colors.textMain }}>Dynamic Visualizer</h3>
+            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.4rem', color: colors.textMain }}>{tr("Dynamic Visualizer")}</h3>
             <div style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'radial-gradient(ellipse at center, rgba(14,165,233,0.06) 0%, rgba(0,0,0,0.3) 100%)',
@@ -513,11 +526,11 @@ export default function Dashboard() {
                                 transition: 'background 0.1s, box-shadow 0.1s',
                               }}>
                                 <span style={{
-                                  writingMode: 'vertical-rl',
+                                  writingMode: lang === 'si' ? 'horizontal-tb' : 'vertical-rl',
                                   color: isActive ? (isBlack ? '#fff' : '#0f172a') : (isBlack ? '#94a3b8' : '#64748b'),
-                                  fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1px',
+                                  fontSize: lang === 'si' ? (isBlack ? '0.7rem' : '0.9rem') : '0.75rem', fontWeight: 700, letterSpacing: lang === 'si' ? 'normal' : '1px', whiteSpace: 'nowrap',
                                   textShadow: isActive ? `0 0 8px ${isBlack ? '#fff' : colors.cyan}` : 'none',
-                                }}>{note}</span>
+                                }}>{sw(note)}</span>
                               </div>
 
                               {/* Front Face */}
@@ -578,7 +591,7 @@ export default function Dashboard() {
                                   }}
                                 >
                                   <div style={{ fontWeight: 700, color: colors.cyan, fontSize: '0.75rem', marginBottom: '2px' }}>
-                                    {activeEvent.swara || note} <span style={{ color: '#fff' }}>· {activeEvent.noteName || ''}</span>
+                                    {sw(activeEvent.swara || note)} <span style={{ color: '#fff' }}>· {activeEvent.noteName || ''}</span>
                                   </div>
                                   <div style={{ color: '#94a3b8' }}>
                                     C{activeEvent.controllerId || '?'} · GPIO {activeEvent.gpio ?? '?'}
@@ -621,7 +634,7 @@ export default function Dashboard() {
                                 color: isActive ? colors.purple : colors.textDim,
                                 fontWeight: isActive ? 'bold' : 'normal',
                                 textShadow: isActive ? `0 0 8px ${colors.purple}66` : 'none',
-                              }}>{str}</span>
+                              }}>{tr(str)}</span>
                               <div style={{
                                 flex: 1, position: 'relative',
                                 height: isActive ? '4px' : '2px',
@@ -707,7 +720,7 @@ export default function Dashboard() {
                             }}
                           >
                             <span style={{ fontSize: '1.2rem' }}>{pad.icon}</span>
-                            <span>{pad.label}</span>
+                            <span>{tr(pad.label)}</span>
                           </motion.button>
                         );
                       })}
@@ -729,7 +742,7 @@ export default function Dashboard() {
                           />
                         ))}
                       </div>
-                      <p style={{ color: colors.textMuted, fontSize: '0.95rem' }}>Voice controls and effects can be displayed here.</p>
+                      <p style={{ color: colors.textMuted, fontSize: '0.95rem' }}>{tr("Voice controls and effects can be displayed here.")}</p>
                     </div>
                   )}
 
@@ -744,11 +757,11 @@ export default function Dashboard() {
 
           {/* AUDIO CONTROL */}
           <div style={panelStyle}>
-            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.4rem', color: colors.textMain }}>Audio Control</h3>
+            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.4rem', color: colors.textMain }}>{tr("Audio Control")}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
               {Object.entries(volumes).map(([key, val]) => (
                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <span style={{ width: '80px', textTransform: 'capitalize', color: key === 'master' ? colors.textMain : colors.textMuted, fontWeight: key === 'master' ? 'bold' : 'normal' }}>{key}</span>
+                  <span style={{ width: '80px', textTransform: 'capitalize', color: key === 'master' ? colors.textMain : colors.textMuted, fontWeight: key === 'master' ? 'bold' : 'normal' }}>{tr(key)}</span>
                   <input
                     type="range" min="0" max="100" value={val}
                     onChange={(e) => handleVolumeChange(key, parseInt(e.target.value))}
@@ -760,43 +773,43 @@ export default function Dashboard() {
             </div>
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleMuteAll} style={{ flex: 1, padding: '0.8rem', background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, color: colors.textMain, borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                Mute All
+                {tr("Mute All")}
               </motion.button>
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleStopAllSounds} style={{ flex: 1, padding: '0.8rem', background: 'rgba(239, 68, 68, 0.1)', border: `1px solid ${colors.danger}`, color: colors.danger, borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                Stop Sounds
+                {tr("Stop Sounds")}
               </motion.button>
             </div>
           </div>
 
           {/* GESTURE DETECTION */}
           <div style={panelStyle}>
-            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.4rem', color: colors.textMain }}>Gesture Detection</h3>
+            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.4rem', color: colors.textMain }}>{tr("Gesture Detection")}</h3>
             {activeMode === 'drum' || activeMode === 'violin' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...rowDivider, paddingBottom: '1rem' }}>
-                  <span style={{ color: colors.textMuted }}>Current Model:</span>
+                  <span style={{ color: colors.textMuted }}>{tr("Current Model:")}</span>
                   <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: colors.textMain }}>
-                    {activeMode === 'drum' ? 'Drum Hit Detection' : 'Bow Gesture Detection'}
+                    {activeMode === 'drum' ? tr("Drum Hit Detection") : tr("Bow Gesture Detection")}
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: colors.textMuted }}>Detected State:</span>
+                  <span style={{ color: colors.textMuted }}>{tr("Detected State:")}</span>
                   <div style={{ fontSize: '1.8rem', fontWeight: '900', color: activeMode === 'drum' ? colors.pink : colors.purple }}>
-                    {activeMode === 'drum' ? (activeDrum ? 'Hit' : 'Idle') : (bowState.active ? 'Bow Active' : 'Idle')}
+                    {activeMode === 'drum' ? (activeDrum ? tr("Hit") : tr("Idle")) : (bowState.active ? tr("Bow Active") : tr("Idle"))}
                   </div>
                 </div>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                    <span style={{ color: colors.textMuted }}>Status:</span>
+                    <span style={{ color: colors.textMuted }}>{tr("Status:")}</span>
                     <strong style={{ fontSize: '1.2rem', color: colors.textMain }}>
-                      {activeMode === 'drum' ? (activeDrum ? `${activeDrum}` : 'Waiting...') : (bowState.active ? 'Sustain ON' : 'Waiting...')}
+                      {activeMode === 'drum' ? (activeDrum ? drum(activeDrum) : tr("Waiting...")) : (bowState.active ? tr("Sustain ON") : tr("Waiting..."))}
                     </strong>
                   </div>
                 </div>
               </div>
             ) : (
               <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textDim, textAlign: 'center', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '12px', padding: '2rem' }}>
-                Gesture detection is not currently active for {activeMode} mode.
+                {tr('Gesture detection is not currently active for {mode} mode.', { mode: tr(activeMode) })}
               </div>
             )}
           </div>
@@ -805,13 +818,13 @@ export default function Dashboard() {
         {/* ============== 8. RECENT ACTIVITY LOG ============== */}
         <section style={panelStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.4rem', color: colors.textMain }}>Recent Activity</h3>
+            <h3 style={{ margin: 0, fontSize: '1.4rem', color: colors.textMain }}>{tr("Recent Activity")}</h3>
             <button onClick={clearLog} style={{ background: 'transparent', border: 'none', color: colors.cyan, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>
-              CLEAR LOG
+              {tr("CLEAR LOG")}
             </button>
           </div>
           <div ref={logContainerRef} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '12px', height: '250px', overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', fontFamily: 'monospace', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.9rem' }}>
-            {activityLog.length === 0 && <div style={{ color: colors.textDim, textAlign: 'center', marginTop: '2rem' }}>No activity to show.</div>}
+            {activityLog.length === 0 && <div style={{ color: colors.textDim, textAlign: 'center', marginTop: '2rem' }}>{tr("No activity to show.")}</div>}
             {activityLog.map(log => {
               let iconColor = colors.textDim;
               if (log.type === 'system') iconColor = colors.success;
@@ -821,9 +834,9 @@ export default function Dashboard() {
               if (log.type === 'audio') iconColor = colors.amber;
               return (
                 <div key={log.id} style={{ display: 'flex', gap: '1rem', borderBottom: `1px solid ${colors.divider}`, paddingBottom: '0.6rem', alignItems: 'flex-start' }}>
-                  <span style={{ color: colors.textDim, minWidth: '85px' }}>[{log.time}]</span>
+                  <span style={{ color: colors.textDim, minWidth: '85px' }}>[{new Date(log.ts).toLocaleTimeString(lang === 'si' ? 'si-LK' : undefined)}]</span>
                   <span style={{ color: iconColor }}>●</span>
-                  <span style={{ color: colors.textMuted, lineHeight: 1.4 }}>{log.msg}</span>
+                  <span style={{ color: colors.textMuted, lineHeight: 1.4 }}>{renderLogMsg(log)}</span>
                 </div>
               );
             })}
@@ -833,16 +846,16 @@ export default function Dashboard() {
         {/* ============== 9. EMERGENCY ACTION BAR ============== */}
         <section style={{ ...panelStyle, display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleStopAllSounds} style={{ flex: '1 1 200px', padding: '1.2rem', background: colors.danger, border: 'none', color: 'white', borderRadius: '12px', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', boxShadow: `0 6px 20px rgba(239, 68, 68, 0.3)` }}>
-            STOP ALL SOUNDS
+            {tr("STOP ALL SOUNDS")}
           </motion.button>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleReconnect} style={{ flex: '1 1 200px', padding: '1.2rem', background: 'rgba(14, 165, 233, 0.1)', border: `1px solid ${colors.cyan}`, color: colors.cyan, borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-            Reconnect Devices
+            {tr("Reconnect Devices")}
           </motion.button>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleReset} style={{ flex: '1 1 200px', padding: '1.2rem', background: 'rgba(139, 92, 246, 0.1)', border: `1px solid ${colors.purple}`, color: colors.purple, borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-            Reset Controllers
+            {tr("Reset Controllers")}
           </motion.button>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={clearLog} style={{ flex: '1 1 200px', padding: '1.2rem', background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.1)`, color: colors.textMuted, borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-            Clear Log
+            {tr("Clear Log")}
           </motion.button>
         </section>
 

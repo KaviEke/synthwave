@@ -1,8 +1,10 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { SocketContext } from '../context/SocketContext';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 function GameViolin() {
+  const { tr } = useLanguage();
   const { currentNote } = useContext(SocketContext);
   const [energy, setEnergy] = useState(100);
   const [score, setScore] = useState(0);
@@ -42,12 +44,12 @@ function GameViolin() {
 
   return (
     <div style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <h1 style={{ color: '#8b5cf6', marginBottom: '1rem' }}>Violin Bow Survival</h1>
+      <h1 style={{ color: '#8b5cf6', marginBottom: '1rem' }}>{tr("Violin Bow Survival")}</h1>
       
       {!gameOver ? (
-        <h2 style={{ marginBottom: '2rem' }}>Score: {score}</h2>
+        <h2 style={{ marginBottom: '2rem' }}>{tr("Score:")} {score}</h2>
       ) : (
-        <h2 style={{ marginBottom: '2rem', color: '#ef4444' }}>GAME OVER! Final Score: {score}</h2>
+        <h2 style={{ marginBottom: '2rem', color: '#ef4444' }}>{tr("GAME OVER! Final Score:")} {score}</h2>
       )}
 
       <div style={{ position: 'relative', width: '300px', height: '300px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '3rem' }}>
@@ -92,7 +94,7 @@ function GameViolin() {
       </div>
 
       <p style={{ marginTop: '5rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '500px' }}>
-        The orb is dying in the vacuum of space! You must continuously play the Violin to generate sonic energy and keep the orb alive! If you stop playing, it will fade to zero.
+        {tr("The orb is dying in the vacuum of space! You must continuously play the Violin to generate sonic energy and keep the orb alive! If you stop playing, it will fade to zero.")}
       </p>
 
       {gameOver && (
@@ -101,7 +103,7 @@ function GameViolin() {
           style={{ marginTop: '2rem' }}
           onClick={() => { setEnergy(100); setScore(0); setGameOver(false); }}
         >
-          Restart Survival
+          {tr("Restart Survival")}
         </button>
       )}
     </div>

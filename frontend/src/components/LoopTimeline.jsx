@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const LoopTimeline = ({ loopState, loopPosition }) => {
+  const { tr } = useLanguage();
   if (!loopState) return null;
 
   const { bars, beatsPerBar } = loopState;
@@ -21,7 +23,7 @@ const LoopTimeline = ({ loopState, loopPosition }) => {
     <div className="loop-timeline glass-panel">
       <div className="timeline-header">
         <div className="timeline-status">
-          Bar {currentBar} / {bars} - Beat {currentBeat}
+          {tr("Bar {bar} / {bars} - Beat {beat}", { bar: currentBar, bars, beat: currentBeat })}
         </div>
         <div className="timeline-progress-text">
           {Math.floor(progressPercent)}%

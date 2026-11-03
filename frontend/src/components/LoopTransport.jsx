@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const LoopTransport = ({ loopState, onCommand }) => {
+  const { tr } = useLanguage();
   const isPlaying = loopState?.playing || false;
   const isRecording = loopState?.recording || false;
 
@@ -27,7 +29,7 @@ const LoopTransport = ({ loopState, onCommand }) => {
     <div className="loop-transport glass-panel">
       <div className="transport-controls">
         <div className="control-group">
-          <label>BPM</label>
+          <label>{tr("BPM")}</label>
           <input 
             type="number" 
             min="40" 
@@ -38,7 +40,7 @@ const LoopTransport = ({ loopState, onCommand }) => {
           />
         </div>
         <div className="control-group">
-          <label>Bars</label>
+          <label>{tr("Bars")}</label>
           <select 
             value={loopState?.bars || 4} 
             onChange={handleBarsChange}
@@ -51,25 +53,25 @@ const LoopTransport = ({ loopState, onCommand }) => {
           </select>
         </div>
         <div className="control-group">
-          <label>Count In</label>
+          <label>{tr("Count In")}</label>
           <select 
             value={loopState?.countInBars || 1} 
             onChange={handleCountInChange}
             disabled={isPlaying || isRecording}
           >
-            <option value="0">Off</option>
-            <option value="1">1 Bar</option>
-            <option value="2">2 Bars</option>
+            <option value="0">{tr("Off")}</option>
+            <option value="1">{tr("1 Bar")}</option>
+            <option value="2">{tr("2 Bars")}</option>
           </select>
         </div>
         <div className="control-group">
-          <label>Quantize</label>
+          <label>{tr("Quantize")}</label>
           <select 
             value={loopState?.quantize || 'off'} 
             onChange={handleQuantizeChange}
             disabled={isPlaying || isRecording}
           >
-            <option value="off">Off</option>
+            <option value="off">{tr("Off")}</option>
             <option value="1/4">1/4</option>
             <option value="1/8">1/8</option>
             <option value="1/16">1/16</option>
@@ -82,33 +84,33 @@ const LoopTransport = ({ loopState, onCommand }) => {
           className={`transport-btn record-btn ${isRecording ? 'active' : ''}`}
           onClick={() => onCommand(isRecording ? 'loop_stop_recording' : 'loop_start_recording')}
         >
-          {isRecording ? '■ Stop Rec' : '● Record'}
+          {isRecording ? tr("■ Stop Rec") : tr("● Record")}
         </button>
         <button 
           className={`transport-btn play-btn ${isPlaying && !isRecording ? 'active' : ''}`}
           onClick={() => onCommand('loop_play')}
         >
-          ▶ Play
+          {tr("▶ Play")}
         </button>
         <button 
           className="transport-btn pause-btn"
           onClick={() => onCommand('loop_pause')}
         >
-          ⏸ Pause
+          {tr("⏸ Pause")}
         </button>
         <button 
           className="transport-btn stop-btn"
           onClick={() => onCommand('loop_stop')}
         >
-          ■ Stop
+          {tr("■ Stop")}
         </button>
         <button 
           className="transport-btn clear-all-btn"
           onClick={() => {
-            if(window.confirm('Clear all tracks?')) onCommand('loop_clear_all');
+            if(window.confirm(tr('Clear all tracks?'))) onCommand('loop_clear_all');
           }}
         >
-          ✕ Clear All
+          {tr("✕ Clear All")}
         </button>
       </div>
     </div>

@@ -1,8 +1,10 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { SocketContext } from '../context/SocketContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 function GameDrum() {
+  const { tr, drum, lang } = useLanguage();
   const { currentNote } = useContext(SocketContext);
   const [score, setScore] = useState(0);
   const [beats, setBeats] = useState([]);
@@ -57,10 +59,10 @@ function GameDrum() {
 
   return (
     <div style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <h1 style={{ color: '#ef4444', marginBottom: '1rem' }}>Drum Rhythm Master</h1>
-      <h2 style={{ marginBottom: '2rem' }}>Score: {score}</h2>
+      <h1 style={{ color: '#ef4444', marginBottom: '1rem' }}>{tr("Drum Rhythm Master")}</h1>
+      <h2 style={{ marginBottom: '2rem' }}>{tr("Score:")} {score}</h2>
       
-      {message && <h3 style={{ color: message.includes('PERFECT') ? '#10b981' : '#ef4444', position: 'absolute', top: '150px' }}>{message}</h3>}
+      {message && <h3 style={{ color: message.includes('PERFECT') ? '#10b981' : '#ef4444', position: 'absolute', top: '150px' }}>{tr(message)}</h3>}
 
       <div style={{ width: '400px', height: '500px', background: 'rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden', border: '2px solid #ef4444', borderRadius: '12px' }}>
         {/* Hit Zone Line */}
@@ -83,15 +85,17 @@ function GameDrum() {
                 color: 'white',
                 fontWeight: 'bold',
                 lineHeight: '20px',
+                fontSize: lang === 'si' ? '0.7rem' : undefined,
+                whiteSpace: 'nowrap',
                 boxShadow: '0 0 10px rgba(255,255,255,0.5)'
               }}
             >
-              {b.target}
+              {drum(b.target)}
             </div>
           ))}
         </AnimatePresence>
       </div>
-      <p style={{ marginTop: '2rem', color: 'var(--text-muted)' }}>Hit the corresponding drum pad when the block crosses the glowing pink line!</p>
+      <p style={{ marginTop: '2rem', color: 'var(--text-muted)' }}>{tr("Hit the corresponding drum pad when the block crosses the glowing pink line!")}</p>
     </div>
   );
 }
